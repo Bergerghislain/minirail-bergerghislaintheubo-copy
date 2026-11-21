@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local configuration override (optional — the app falls back to configuration_example.yaml)
+configuration.yaml
+
+# IDE
+.idea/
+.vscode/

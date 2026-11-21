@@ -1,0 +1,28 @@
+services:
+  postgres:
+    # PostgreSQL 17 with the pgmq extension: the task queue (remoulade's
+    # PostgresBroker) stores its queues in the same database via pgmq.
+    image: ghcr.io/pgmq/pg17-pgmq:latest
+    environment:
+      POSTGRES_USER: minirail
+      POSTGRES_PASSWORD: minirail
+      POSTGRES_DB: minirail
+    ports:
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minirail"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15

@@ -1,0 +1,30 @@
+# Minirail local development configuration.
+#
+# This file works out of the box with the services started by `make up`.
+# You normally don't need to touch it: when no `configuration.yaml` exists,
+# the app falls back to this file (and logs a notice).
+#
+# To customize settings locally, copy it first — `configuration.yaml` is gitignored:
+#   cp configuration_example.yaml configuration.yaml
+#
+# You can also point the app at any config file with the MINIRAIL_CONFIG
+# environment variable, and override the two DSNs directly with
+# MINIRAIL_DB_DSN / MINIRAIL_REDIS_DSN (used by CI).
+
+database:
+  dsn: postgresql+psycopg://minirail:minirail@127.0.0.1:15432/minirail
+
+redis:
+  dsn: redis://127.0.0.1:16379/0
+
+broker:
+  # Remoulade (the task queue) uses PostgreSQL as its message broker locally:
+  # no extra infrastructure needed beyond `make up`. It keeps its queues in
+  # the pgmq schema of this database. Plain postgresql:// URL (no SQLAlchemy
+  # driver suffix): remoulade also opens raw psycopg connections with it.
+  url: postgresql://minirail:minirail@127.0.0.1:15432/minirail
+
+api:
+  # A PENDING booking holds its seats for this long before the expiry actor
+  # releases them.
+  booking_ttl_seconds: 900

@@ -1,0 +1,77 @@
+[project]
+name = "minirail"
+version = "0.1.0"
+description = "Minirail — a mini rail reservation backend"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "alembic>=1.14",
+    "click>=8.1",
+    "fastapi[standard]>=0.115",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.9",
+    "pyyaml>=6",
+    "redis>=5",
+    # `limits` is required: remoulade's core broker module imports the rate-limit
+    # middleware unconditionally and fails to import without it.
+    "remoulade[postgres,limits]>=7",
+    "sqlalchemy>=2.0",
+]
+
+[project.scripts]
+minirail = "minirail.cli:cli"
+
+[dependency-groups]
+dev = [
+    "factory-boy>=3.3",
+    "freezegun>=1.5",
+    "pre-commit>=4",
+    "pyright>=1.1.390",
+    "pytest>=8",
+    "pytest-mock>=3",
+    "ruff>=0.9",
+    "types-factory-boy>=0.4.1",
+    "types-pyyaml>=6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/minirail"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "Q", "I", "S", "UP", "W", "PT", "FAST", "RUF", "C4", "FA", "ISC", "TID", "N"]
+# N818: business exceptions follow the `...Exception` naming convention of this codebase.
+ignore = ["N818"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S107", "S311"]
+"alembic/**" = ["S608"]
+
+[tool.pyright]
+include = ["src", "tests"]
+strict = ["src/**"]
+pythonVersion = "3.14"
+reportImplicitOverride = true
+venvPath = "."
+venv = ".venv"
+# Resolve the `tests` package (imports like `from tests.conftest import ...`).
+extraPaths = ["."]
+
+# factory-boy's idiomatic nested `class Meta` pattern cannot be modeled by its
+# type stubs; silence only those two rules, only for tests.
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+reportIncompatibleVariableOverride = false
+reportAttributeAccessIssue = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra"]
