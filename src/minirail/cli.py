@@ -110,6 +110,7 @@ def init_demo_data(force: bool) -> None:
     date_str = summary.first_date.isoformat()
     click.echo(f"Seeded {summary.service_count} services starting {date_str}.")
     click.echo(f"API key: {summary.api_key}")
+    click.echo(f"Demo discount code: {summary.discount_code} (10% off, 100 uses)")
     click.echo(f"Confirmed sample booking: {summary.confirmed_booking_key}")
     click.echo(f"Pending sample booking:   {summary.pending_booking_key} (expires in 15 min)")
     click.echo("\nTry it:")
@@ -131,3 +132,39 @@ def create_sales_channel(name: str) -> None:
         session.add(SalesChannel(name=name, api_key=api_key))
         session.commit()
     click.echo(f"Sales channel {name!r} created, API key: {api_key}")
+
+
+@cli.command("create-discount-code")
+@click.argument("sales_channel_name")
+@click.argument("code")
+@click.option("--percent-off", type=click.FLOAT, required=True, help="Percentage off, e.g. 10 for 10%.")
+@click.option("--max-uses", type=click.INT, required=True, help="How many times the code may be used.")
+def create_discount_code(sales_channel_name: str, code: str, percent_off: float, max_uses: int) -> None:
+    """Create a discount code for an existing sales channel."""
+    from decimal import Decimal
+
+    from sqlalchemy import select
+
+    from minirail.sales.models import DiscountCode, SalesChannel
+    from minirail.utils.app import get_session
+
+    if percent_off <= 0 or percent_off > 100:
+        raise click.ClickException("--percent-off must be between 0 (exclusive) and 100")
+    if max_uses < 1:
+        raise click.ClickException("--max-uses must be at least 1")
+
+    normalized = code.strip().upper()
+    with get_session() as session:
+        channel = session.scalars(select(SalesChannel).where(SalesChannel.name == sales_channel_name)).one_or_none()
+        if channel is None:
+            raise click.ClickException(f"Unknown sales channel {sales_channel_name!r}")
+        session.add(
+            DiscountCode(
+                sales_channel_id=channel.id,
+                code=normalized,
+                percent_off=Decimal(str(percent_off)),
+                max_uses=max_uses,
+            )
+        )
+        session.commit()
+    click.echo(f"Discount code {normalized!r} created for channel {sales_channel_name!r} ({percent_off}% off, max {max_uses} uses)")
