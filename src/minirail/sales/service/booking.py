@@ -18,18 +18,12 @@ from minirail.sales.models import Booking, Passenger, Ticket
 
 def get_booking_by_key(session: MinirailSession, booking_key: str) -> Booking | None:
     """Load a booking by its public key (with discount code when present)."""
-    statement = (
-        select(Booking)
-        .where(Booking.booking_key == booking_key)
-        .options(selectinload(Booking.discount_code))
-    )
+    statement = select(Booking).where(Booking.booking_key == booking_key).options(selectinload(Booking.discount_code))
     return session.scalars(statement).one_or_none()
 
 
 def get_booking_by_id(session: MinirailSession, booking_id: int) -> Booking | None:
-    statement = (
-        select(Booking).where(Booking.id == booking_id).options(selectinload(Booking.discount_code))
-    )
+    statement = select(Booking).where(Booking.id == booking_id).options(selectinload(Booking.discount_code))
     return session.scalars(statement).one_or_none()
 
 
@@ -47,7 +41,7 @@ def create_booking_rows(
     """Create the PENDING booking with its passengers and HELD tickets.
 
     Seat inventory is NOT touched here — hold_seats() is a separate primitive
-    and the job composes the two. ``total_amount`` defaults to OD price ×
+    and the job composes the two. ``total_amount`` defaults to OD price x
     passengers when no discount is applied.
     """
     full_amount = od.price * len(passenger_names)

@@ -167,4 +167,7 @@ def create_discount_code(sales_channel_name: str, code: str, percent_off: float,
             )
         )
         session.commit()
-    click.echo(f"Discount code {normalized!r} created for channel {sales_channel_name!r} ({percent_off}% off, max {max_uses} uses)")
+    click.echo(
+        f"Discount code {normalized!r} created for channel {sales_channel_name!r} "
+        f"({percent_off}% off, max {max_uses} uses)"
+    )
