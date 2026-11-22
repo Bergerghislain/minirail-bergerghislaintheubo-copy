@@ -24,10 +24,32 @@ class BookingFetcher(SQLOneFetcher[BookingOutputSchema]):
         statement = (
             select(Booking)
             .where(Booking.booking_key == identifier)
-            .options(selectinload(Booking.passengers), selectinload(Booking.tickets))
+            .options(
+                selectinload(Booking.passengers),
+                selectinload(Booking.tickets),
+                selectinload(Booking.discount_code),
+            )
         )
         booking = self.session.scalars(statement).one_or_none()
-        return BookingOutputSchema.model_validate(booking) if booking is not None else None
+        if booking is None:
+            return None
+        # Dict form: ORM ``discount_code`` is a relationship, API wants the string.
+        return BookingOutputSchema.model_validate(
+            {
+                "booking_key": booking.booking_key,
+                "pnr": booking.pnr,
+                "status": booking.status,
+                "total_amount": booking.total_amount,
+                "currency": booking.currency,
+                "discount_amount": booking.discount_amount,
+                "discount_code": booking.discount_code.code if booking.discount_code is not None else None,
+                "expires_at": booking.expires_at,
+                "confirmed_at": booking.confirmed_at,
+                "created_at": booking.created_at,
+                "passengers": booking.passengers,
+                "tickets": booking.tickets,
+            }
+        )
 
     def get_by_key_or_raise(self, booking_key: str) -> BookingOutputSchema:
         return self.get_one_or_raise(booking_key)

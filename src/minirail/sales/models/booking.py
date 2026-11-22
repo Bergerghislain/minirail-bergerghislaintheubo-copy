@@ -12,6 +12,7 @@ from minirail.orm import Base, UTCDateTime
 from minirail.utils.date_utils import utc_now
 
 if TYPE_CHECKING:
+    from minirail.sales.models.discount_code import DiscountCode
     from minirail.sales.models.passenger import Passenger
     from minirail.sales.models.sales_channel import SalesChannel
     from minirail.sales.models.ticket import Ticket
@@ -65,6 +66,10 @@ class Booking(Base):
     )
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     currency: Mapped[str] = mapped_column(String(3), default="EUR")
+    # Optional promotion applied at creation time.
+    discount_code_id: Mapped[int | None] = mapped_column(ForeignKey("discount_code.id"))
+    # How much was subtracted from the full OD price (0 when no code).
+    discount_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
     # While PENDING: the moment the expiry actor may release the held seats.
     # Cleared on confirmation.
     expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
@@ -72,5 +77,6 @@ class Booking(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
     sales_channel: Mapped[SalesChannel] = relationship()
+    discount_code: Mapped[DiscountCode | None] = relationship()
     passengers: Mapped[list[Passenger]] = relationship(back_populates="booking")
     tickets: Mapped[list[Ticket]] = relationship(back_populates="booking")

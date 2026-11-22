@@ -9,8 +9,10 @@ class ErrorCodeEnum(StrEnum):
     """
 
     BOOKING_NOT_PENDING = auto()
+    DISCOUNT_CODE_EXHAUSTED = auto()
     INTERNAL_ERROR = auto()
     INVALID_API_KEY = auto()
+    INVALID_DISCOUNT_CODE = auto()
     ITEM_NOT_FOUND = auto()
     PAYMENT_DECLINED = auto()
     SERVICE_UNAVAILABLE = auto()
@@ -43,6 +45,20 @@ class ItemNotFoundException(MinirailException):
 class SoldOutException(MinirailException):
     http_status_code = 409
     error_code = ErrorCodeEnum.SOLD_OUT
+
+
+class InvalidDiscountCodeException(MinirailException):
+    """Unknown, inactive, or not belonging to the caller's sales channel."""
+
+    http_status_code = 400
+    error_code = ErrorCodeEnum.INVALID_DISCOUNT_CODE
+
+
+class DiscountCodeExhaustedException(MinirailException):
+    """The partner-agreed max_uses has been reached."""
+
+    http_status_code = 409
+    error_code = ErrorCodeEnum.DISCOUNT_CODE_EXHAUSTED
 
 
 class BookingNotPendingException(MinirailException):
