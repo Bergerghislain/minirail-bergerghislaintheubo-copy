@@ -126,11 +126,11 @@ def init_demo_data(force: bool) -> None:
 @click.argument("name")
 def create_sales_channel(name: str) -> None:
     """Create a sales channel and print its API key."""
-    # Both model packages: Ticket relates to OD, and SQLAlchemy configures
-    # every mapper at first use — an unimported model breaks the whole registry.
-    import minirail.inventory.models  # noqa: F401
+    from minirail.orm import load_model_registry
     from minirail.sales.models import SalesChannel
     from minirail.utils.app import get_session
+
+    load_model_registry()
 
     api_key = secrets.token_urlsafe(24)
     with get_session() as session:
@@ -151,11 +151,12 @@ def create_discount_code(
     """Create a discount code for an existing sales channel."""
     from sqlalchemy import select
 
-    import minirail.inventory.models  # noqa: F401
+    from minirail.orm import load_model_registry
     from minirail.sales.models import DiscountCode, SalesChannel
     from minirail.sales.service.discount_code import normalize_code
     from minirail.utils.app import get_session
 
+    load_model_registry()
     # Parsed from the string option: Decimal(float) would store 10.000000000000000555.
     percentage = Decimal(percent_off)
     if percentage <= 0 or percentage > 100:

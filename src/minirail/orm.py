@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from importlib import import_module
 from typing import Any, override
 
 from sqlalchemy import DateTime, MetaData
@@ -24,6 +25,20 @@ class Base(DeclarativeBase):
 # Alias used in signatures across the codebase; keeps the door open to a
 # custom Session subclass without touching every annotation.
 type MinirailSession = Session
+
+MODEL_PACKAGES = ("minirail.inventory.models", "minirail.sales.models")
+
+
+def load_model_registry() -> None:
+    """Import every model package so SQLAlchemy can configure its mappers.
+
+    Mappers are configured all at once, and relationships name their target
+    as a string: Ticket points at OD, so loading only the sales models leaves
+    that name unresolvable. The API and the worker import both domains on the
+    way in; entry points that don't — CLI commands — call this first.
+    """
+    for package in MODEL_PACKAGES:
+        import_module(package)
 
 
 class UTCDateTime(TypeDecorator[datetime]):
