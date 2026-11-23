@@ -51,6 +51,8 @@ curl -H "$KEY" -H "Content-Type: application/json" -X POST http://127.0.0.1:8000
   -d '{"odId": <odId>, "passengers": [{"firstName": "Ada", "lastName": "Lovelace"}, {"firstName": "Alan", "lastName": "Turing"}]}'
 # → 201 with a PENDING booking; note its "bookingKey". Seats are now held:
 #   re-run the search and watch remainingSeats drop.
+# Add "discountCode": "SAVE10" to the payload for 10% off (seeded by `make seed`);
+#   the response then carries "discountAmount" and "discountCode".
 
 # 3. Confirm (pay) the booking — any token works except "tok_declined"
 curl -H "$KEY" -H "Content-Type: application/json" -X POST \
@@ -119,6 +121,7 @@ The layering rules are enforced by
 | `make redis-cli` | redis-cli shell |
 | `uv run minirail expire-stale-bookings` | ops fallback: expire overdue PENDING bookings now |
 | `uv run minirail create-sales-channel NAME` | create a channel, print its API key |
+| `uv run minirail create-discount-code NAME CODE --percent-off 10 --max-uses 100` | create a promotion code for a channel |
 | `uv run minirail init-demo-data --force` | wipe everything and reseed |
 | `uv run alembic revision --autogenerate -m "..."` | generate a migration from model changes |
 
