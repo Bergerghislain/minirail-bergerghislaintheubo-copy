@@ -123,6 +123,9 @@ def init_demo_data(force: bool) -> None:
 @click.argument("name")
 def create_sales_channel(name: str) -> None:
     """Create a sales channel and print its API key."""
+    # Both model packages: Ticket relates to OD, and SQLAlchemy configures
+    # every mapper at first use — an unimported model breaks the whole registry.
+    import minirail.inventory.models  # noqa: F401
     from minirail.sales.models import SalesChannel
     from minirail.utils.app import get_session
 
