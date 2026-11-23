@@ -28,3 +28,6 @@ api:
   # A PENDING booking holds its seats for this long before the expiry actor
   # releases them.
   booking_ttl_seconds: 900
+  # Bookings cheaper than this cannot use a discount code. Quoted so it is
+  # read as an exact decimal, never as a float.
+  discount_min_price: "0.00"
