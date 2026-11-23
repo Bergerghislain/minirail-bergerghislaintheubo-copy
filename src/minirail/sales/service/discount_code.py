@@ -5,7 +5,7 @@ Everything here flushes and never commits — the caller owns the transaction.
 
 from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from minirail.orm import MinirailSession
 from minirail.sales.models import DiscountCode
@@ -80,7 +80,15 @@ def reserve_discount_use(session: MinirailSession, discount: DiscountCode) -> No
 
 
 def release_discount_use(session: MinirailSession, discount: DiscountCode) -> None:
-    """Give one use back (a PENDING booking was cancelled or expired)."""
-    if discount.use_count > 0:
-        discount.use_count -= 1
-        session.flush()
+    """Give one use back (a PENDING booking was cancelled or expired).
+
+    A single UPDATE, unlike the reserve path, which already holds the row
+    lock: a counter computed in Python here could overwrite a use another
+    booking reserved in the meantime.
+    """
+    session.execute(
+        update(DiscountCode)
+        .where(DiscountCode.id == discount.id, DiscountCode.use_count > 0)
+        .values(use_count=DiscountCode.use_count - 1)
+    )
+    session.expire(discount, ["use_count"])
