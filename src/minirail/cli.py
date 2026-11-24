@@ -123,8 +123,11 @@ def init_demo_data(force: bool) -> None:
 @click.argument("name")
 def create_sales_channel(name: str) -> None:
     """Create a sales channel and print its API key."""
+    from minirail.orm import load_model_registry
     from minirail.sales.models import SalesChannel
     from minirail.utils.app import get_session
+
+    load_model_registry()
 
     api_key = secrets.token_urlsafe(24)
     with get_session() as session:
