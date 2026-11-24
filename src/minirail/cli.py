@@ -131,3 +131,72 @@ def create_sales_channel(name: str) -> None:
         session.add(SalesChannel(name=name, api_key=api_key))
         session.commit()
     click.echo(f"Sales channel {name!r} created, API key: {api_key}")
+
+
+@cli.command("create-discount-code")
+@click.argument("sales_channel_name")
+@click.argument("code")
+@click.option("--percent-off", type=click.FLOAT, required=True, help="Percentage off, e.g. 10 for 10%.")
+@click.option("--max-uses", type=click.INT, required=True, help="How many times the code may be used.")
+@click.option(
+    "--valid-until",
+    type=click.DateTime(formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S"]),
+    default=None,
+    help="Optional expiry (UTC). Date-only is stored as that day 00:00:00 UTC.",
+)
+def create_discount_code(
+    sales_channel_name: str,
+    code: str,
+    percent_off: float,
+    max_uses: int,
+    valid_until,
+) -> None:
+    """Create a percent-off discount code for a sales channel."""
+    from datetime import timezone
+    from decimal import Decimal
+
+    from sqlalchemy import select
+    from sqlalchemy.exc import IntegrityError
+
+    from minirail.sales.models import DiscountCode, SalesChannel
+    from minirail.utils.app import get_session
+
+    if not (0 < percent_off <= 100):
+        raise click.ClickException("--percent-off must be greater than 0 and at most 100.")
+    if max_uses < 1:
+        raise click.ClickException("--max-uses must be at least 1.")
+
+    normalized = code.strip().upper()
+    # click.DateTime yields a naive datetime for both formats; treat as UTC.
+    # Date-only (%Y-%m-%d) becomes that day 00:00:00 UTC.
+    expiry = None
+    if valid_until is not None:
+        expiry = valid_until if valid_until.tzinfo is not None else valid_until.replace(tzinfo=timezone.utc)
+
+    with get_session() as session:
+        channel = session.scalars(select(SalesChannel).where(SalesChannel.name == sales_channel_name)).one_or_none()
+        if channel is None:
+            raise click.ClickException(f"Sales channel {sales_channel_name!r} not found.")
+        session.add(
+            DiscountCode(
+                sales_channel_id=channel.id,
+                code=normalized,
+                percent_off=Decimal(str(percent_off)),
+                max_uses=max_uses,
+                valid_until=expiry,
+            )
+        )
+        try:
+            session.commit()
+        except IntegrityError as exc:
+            raise click.ClickException(
+                f"Discount code {normalized!r} already exists for channel {sales_channel_name!r}."
+            ) from exc
+
+    msg = (
+        f"Discount code {normalized!r} created for channel {sales_channel_name!r} "
+        f"({percent_off:g}% off, max {max_uses} uses)"
+    )
+    if expiry is not None:
+        msg += f", valid until {expiry.isoformat()}"
+    click.echo(msg)

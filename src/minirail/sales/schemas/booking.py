@@ -15,6 +15,8 @@ class PassengerInputSchema(Schema):
 class BookingCreateSchema(Schema):
     od_id: int
     passengers: list[PassengerInputSchema] = Field(min_length=1, max_length=9)
+    # Optional promotion code owned by the calling sales channel.
+    discount_code: str | None = Field(default=None, min_length=1, max_length=32)
 
 
 class BookingConfirmSchema(Schema):
@@ -40,6 +42,8 @@ class BookingOutputSchema(Schema):
     status: BookingStatusEnum
     total_amount: Decimal
     currency: str
+    discount_amount: Decimal
+    discount_code: str | None = None
     expires_at: datetime | None
     confirmed_at: datetime | None
     created_at: datetime
