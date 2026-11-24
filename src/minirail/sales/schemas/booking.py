@@ -1,9 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
-from minirail.sales.models import BookingStatusEnum, TicketStatusEnum
+from minirail.sales.models import BookingStatusEnum, DiscountCode, TicketStatusEnum
 from minirail.utils.schema import Schema
 
 
@@ -15,6 +15,8 @@ class PassengerInputSchema(Schema):
 class BookingCreateSchema(Schema):
     od_id: int
     passengers: list[PassengerInputSchema] = Field(min_length=1, max_length=9)
+    # Promotion code owned by the calling sales channel; any casing accepted.
+    discount_code: str | None = Field(default=None, min_length=1, max_length=32)
 
 
 class BookingConfirmSchema(Schema):
@@ -40,8 +42,16 @@ class BookingOutputSchema(Schema):
     status: BookingStatusEnum
     total_amount: Decimal
     currency: str
+    discount_amount: Decimal
+    discount_code: str | None = None
     expires_at: datetime | None
     confirmed_at: datetime | None
     created_at: datetime
     passengers: list[BookingPassengerSchema]
     tickets: list[BookingTicketSchema]
+
+    @field_validator("discount_code", mode="before")
+    @classmethod
+    def _code_as_string(cls, value: DiscountCode | str | None) -> str | None:
+        """The ORM attribute is the DiscountCode row; the API exposes its code."""
+        return value.code if isinstance(value, DiscountCode) else value

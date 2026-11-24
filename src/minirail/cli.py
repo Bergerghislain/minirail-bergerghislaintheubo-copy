@@ -2,6 +2,8 @@ import logging
 import secrets
 import signal
 import time
+from datetime import UTC, datetime
+from decimal import Decimal
 from types import FrameType
 
 import click
@@ -110,6 +112,7 @@ def init_demo_data(force: bool) -> None:
     date_str = summary.first_date.isoformat()
     click.echo(f"Seeded {summary.service_count} services starting {date_str}.")
     click.echo(f"API key: {summary.api_key}")
+    click.echo(f"Discount code: {summary.discount_code} (10% off, 100 uses)")
     click.echo(f"Confirmed sample booking: {summary.confirmed_booking_key}")
     click.echo(f"Pending sample booking:   {summary.pending_booking_key} (expires in 15 min)")
     click.echo("\nTry it:")
@@ -123,11 +126,57 @@ def init_demo_data(force: bool) -> None:
 @click.argument("name")
 def create_sales_channel(name: str) -> None:
     """Create a sales channel and print its API key."""
+    from minirail.orm import load_model_registry
     from minirail.sales.models import SalesChannel
     from minirail.utils.app import get_session
+
+    load_model_registry()
 
     api_key = secrets.token_urlsafe(24)
     with get_session() as session:
         session.add(SalesChannel(name=name, api_key=api_key))
         session.commit()
     click.echo(f"Sales channel {name!r} created, API key: {api_key}")
+
+
+@cli.command("create-discount-code")
+@click.argument("sales_channel_name")
+@click.argument("code")
+@click.option("--percent-off", required=True, type=click.STRING, help="Percentage off, e.g. 10 for 10%.")
+@click.option("--max-uses", required=True, type=click.INT, help="How many bookings may use the code.")
+@click.option("--valid-until", type=click.DateTime(), help="Last moment the code may be used (UTC).")
+def create_discount_code(
+    sales_channel_name: str, code: str, percent_off: str, max_uses: int, valid_until: datetime | None
+) -> None:
+    """Create a discount code for an existing sales channel."""
+    from sqlalchemy import select
+
+    from minirail.orm import load_model_registry
+    from minirail.sales.models import DiscountCode, SalesChannel
+    from minirail.sales.service.discount_code import normalize_code
+    from minirail.utils.app import get_session
+
+    load_model_registry()
+    # Parsed from the string option: Decimal(float) would store 10.000000000000000555.
+    percentage = Decimal(percent_off)
+    if percentage <= 0 or percentage > 100:
+        raise click.ClickException("--percent-off must be above 0 and at most 100")
+    if max_uses < 1:
+        raise click.ClickException("--max-uses must be at least 1")
+
+    normalized = normalize_code(code)
+    with get_session() as session:
+        channel = session.scalars(select(SalesChannel).where(SalesChannel.name == sales_channel_name)).one_or_none()
+        if channel is None:
+            raise click.ClickException(f"Unknown sales channel {sales_channel_name!r}")
+        session.add(
+            DiscountCode(
+                sales_channel_id=channel.id,
+                code=normalized,
+                percent_off=percentage,
+                max_uses=max_uses,
+                valid_until=valid_until.replace(tzinfo=UTC) if valid_until is not None else None,
+            )
+        )
+        session.commit()
+    click.echo(f"Discount code {normalized!r} created for {sales_channel_name!r}: {percentage}% off, {max_uses} uses")

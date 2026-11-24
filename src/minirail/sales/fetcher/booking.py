@@ -24,7 +24,11 @@ class BookingFetcher(SQLOneFetcher[BookingOutputSchema]):
         statement = (
             select(Booking)
             .where(Booking.booking_key == identifier)
-            .options(selectinload(Booking.passengers), selectinload(Booking.tickets))
+            .options(
+                selectinload(Booking.passengers),
+                selectinload(Booking.tickets),
+                selectinload(Booking.discount_code),
+            )
         )
         booking = self.session.scalars(statement).one_or_none()
         return BookingOutputSchema.model_validate(booking) if booking is not None else None
