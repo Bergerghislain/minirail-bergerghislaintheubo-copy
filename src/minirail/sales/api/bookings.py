@@ -36,6 +36,7 @@ def create_booking(
         sales_channel_id=sales_channel.id,
         od_id=payload.od_id,
         passengers=payload.passengers,
+        discount_code=payload.discount_code,
     ).call_for_api()
     session.commit()
 
