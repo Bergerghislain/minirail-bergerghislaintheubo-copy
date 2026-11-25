@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from minirail.orm import Base, UTCDateTime
@@ -20,7 +20,13 @@ class DiscountCode(Base):
     """
 
     __tablename__ = "discount_code"
-    __table_args__ = (UniqueConstraint("sales_channel_id", "code"),)
+    __table_args__ = (
+        UniqueConstraint("sales_channel_id", "code"),
+        CheckConstraint("percent_off >= 1 AND percent_off <= 100", name="percent_off"),
+        CheckConstraint("max_uses >= 1", name="max_uses"),
+        CheckConstraint("use_count >= 0 AND use_count <= max_uses", name="use_count"),
+        CheckConstraint("code = upper(code)", name="code_uppercase"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     sales_channel_id: Mapped[int] = mapped_column(ForeignKey("sales_channel.id"))

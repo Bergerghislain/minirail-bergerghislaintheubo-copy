@@ -20,12 +20,13 @@ Percent-off promo codes owned by a sales channel, applied at booking creation on
    - unknown / inactive / expired / other channel → `invalid_discount_code` (400)
    - `use_count >= max_uses` → `discount_code_exhausted` (409)
    - gross total `< min_price` → `discount_not_applicable` (400)
+6. **Journal `discount_redemption`**: RESERVED → RELEASED | CONSUMED; `use_count` stays the fast quota. Release/consume via atomic `UPDATE … WHERE status = RESERVED`.
 
 ## Out of scope
 
 - Fixed-amount, stacking, per-passenger discounts
 - Attach a code to an already-created booking
-- Admin REST, soft-delete / redemption audit beyond `use_count`
+- Admin REST; soft-delete of codes
 - Rewriting ticket prices; complex refunds; caching discount reads
 
 ## Try it

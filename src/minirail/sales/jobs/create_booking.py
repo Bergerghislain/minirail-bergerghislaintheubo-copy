@@ -74,7 +74,6 @@ class CreateBookingJob(BaseJob[Booking]):
             )
             discount_amount = compute_discount_amount(gross_total, discount.percent_off)
             total_amount = gross_total - discount_amount
-            reserve_discount_use(self.session, discount)
 
         ttl = timedelta(seconds=get_app().configuration.api.booking_ttl_seconds)
         booking = create_booking_rows(
@@ -88,4 +87,7 @@ class CreateBookingJob(BaseJob[Booking]):
             discount=discount,
             discount_amount=discount_amount,
         )
+        if discount is not None:
+            # Journal needs booking.id; reserve after the booking row exists.
+            reserve_discount_use(self.session, discount, booking)
         self.set_output(booking)

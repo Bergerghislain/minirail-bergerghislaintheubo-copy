@@ -1,14 +1,18 @@
-"""Discount-code primitives: normalize, lock, validate, reserve, release.
+"""Discount-code primitives: normalize, lock, validate, reserve, release, consume.
 
 Everything here flushes and never commits — the caller owns the transaction.
+``use_count`` remains the fast quota counter; ``discount_redemption`` is the journal.
 """
 
 from decimal import ROUND_HALF_UP, Decimal
+from typing import Any, cast
 
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.engine import CursorResult
 
 from minirail.orm import MinirailSession
 from minirail.sales.models import Booking, DiscountCode
+from minirail.sales.models.discount_redemption import DiscountRedemption, DiscountRedemptionStatusEnum
 from minirail.utils.date_utils import utc_now
 from minirail.utils.exc import (
     DiscountCodeExhaustedException,
@@ -80,24 +84,75 @@ def validate_discount_code(
     return discount
 
 
-def reserve_discount_use(session: MinirailSession, discount: DiscountCode) -> None:
-    """Consume one use on an already-validated, locked discount row."""
+def reserve_discount_use(session: MinirailSession, discount: DiscountCode, booking: Booking) -> DiscountRedemption:
+    """Increment ``use_count`` and journal a RESERVED redemption for ``booking``."""
     discount.use_count += 1
+    now = utc_now()
+    redemption = DiscountRedemption(
+        discount_code_id=discount.id,
+        booking_id=booking.id,
+        status=DiscountRedemptionStatusEnum.RESERVED,
+        created_at=now,
+        updated_at=now,
+    )
+    session.add(redemption)
     session.flush()
+    return redemption
 
 
-def release_discount_use_for_booking(session: MinirailSession, booking: Booking) -> None:
-    """Give back one use when a PENDING booking with a promo is cancelled/expired.
+def release_discount_use_for_booking(session: MinirailSession, booking: Booking) -> bool:
+    """Atomically RESERVED → RELEASED and decrement ``use_count`` if the transition won.
 
-    No-op when the booking has no discount. Locks the code row so concurrent
-    reservations cannot race the decrement.
+    Returns True when a use was actually released. Safe under concurrent
+    cancel/expire: a second caller sees rowcount 0 and leaves the counter alone.
     """
     if booking.discount_code_id is None:
-        return
-    statement = select(DiscountCode).where(DiscountCode.id == booking.discount_code_id).with_for_update()
-    discount = session.scalars(statement).one_or_none()
-    if discount is None:
-        return
-    if discount.use_count > 0:
-        discount.use_count -= 1
+        return False
+
+    now = utc_now()
+    result = cast(
+        CursorResult[Any],
+        session.execute(
+            update(DiscountRedemption)
+            .where(
+                DiscountRedemption.booking_id == booking.id,
+                DiscountRedemption.status == DiscountRedemptionStatusEnum.RESERVED,
+            )
+            .values(status=DiscountRedemptionStatusEnum.RELEASED, updated_at=now)
+        ),
+    )
+    if result.rowcount != 1:
+        session.flush()
+        return False
+
+    session.execute(
+        update(DiscountCode)
+        .where(DiscountCode.id == booking.discount_code_id, DiscountCode.use_count > 0)
+        .values(use_count=DiscountCode.use_count - 1)
+    )
     session.flush()
+    return True
+
+
+def consume_discount_use_for_booking(session: MinirailSession, booking: Booking) -> bool:
+    """Atomically RESERVED → CONSUMED on confirm. ``use_count`` stays consumed.
+
+    Returns True when the transition applied.
+    """
+    if booking.discount_code_id is None:
+        return False
+
+    now = utc_now()
+    result = cast(
+        CursorResult[Any],
+        session.execute(
+            update(DiscountRedemption)
+            .where(
+                DiscountRedemption.booking_id == booking.id,
+                DiscountRedemption.status == DiscountRedemptionStatusEnum.RESERVED,
+            )
+            .values(status=DiscountRedemptionStatusEnum.CONSUMED, updated_at=now)
+        ),
+    )
+    session.flush()
+    return result.rowcount == 1
