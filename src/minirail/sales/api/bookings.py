@@ -33,7 +33,7 @@ from minirail.utils import payments
 from minirail.utils.api import session_transaction
 from minirail.utils.app import get_app, get_session
 from minirail.utils.auth import CurrentSalesChannel
-from minirail.utils.exc import PaymentDeclinedException
+from minirail.utils.exc import IdempotencyConflictException, PaymentDeclinedException
 
 router = APIRouter(prefix="/api/bookings", tags=["sales"])
 
@@ -55,8 +55,6 @@ def create_booking(
         if existing is not None:
             # Replayed request: return the original booking (hash checked on store).
             if existing.request_hash != _request_hash(payload):
-                from minirail.utils.exc import IdempotencyConflictException
-
                 raise IdempotencyConflictException("Idempotency-Key was reused with a different request body")
             return BookingFetcher(session).get_by_key_or_raise(existing.booking_key)
 
