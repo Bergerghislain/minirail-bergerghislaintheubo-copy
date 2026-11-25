@@ -18,8 +18,9 @@ def _search(client: TestClient, headers: dict[str, str], origin: str, destinatio
     )
     assert response.status_code == 200
     body = response.json()
-    assert "items" in body
-    return body["items"]
+    # Wiremind / README walkthrough: a JSON array, not a page object.
+    assert isinstance(body, list)
+    return body
 
 
 def test_direct_od_availability(client: TestClient, auth_headers: dict[str, str], session: Session) -> None:
@@ -63,12 +64,13 @@ def test_search_filters_by_date(client: TestClient, auth_headers: dict[str, str]
     )
 
     assert response.status_code == 200
-    body = response.json()
-    assert body["items"] == []
-    assert body["total"] == 0
+    assert response.json() == []
 
 
-def test_search_is_paginated(client: TestClient, auth_headers: dict[str, str], session: Session) -> None:
+def test_optional_limit_still_returns_a_list(
+    client: TestClient, auth_headers: dict[str, str], session: Session
+) -> None:
+    """Pagination must not change the response envelope — only the slice size."""
     build_service_with_ods(session, station_codes=["FRPAR", "FRLYS", "FRMRS"], service_date=TRAVEL_DATE)
 
     response = client.get(
@@ -85,9 +87,9 @@ def test_search_is_paginated(client: TestClient, auth_headers: dict[str, str], s
 
     assert response.status_code == 200
     body = response.json()
-    assert body["total"] == 1
-    assert body["limit"] == 1
-    assert len(body["items"]) == 1
+    assert isinstance(body, list)
+    assert len(body) == 1
+    assert "odId" in body[0]
 
 
 def test_search_results_are_cached(session: Session, query_counter: list[str]) -> None:

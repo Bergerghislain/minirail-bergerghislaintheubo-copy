@@ -81,9 +81,10 @@ Sales channels can create percent-off promo codes and pass them when booking.
     by `api.auth_cache_ttl_seconds`). Deactivating a channel is a security
     action; five minutes of residual access was too long. Writes should still
     call `SalesChannelFetcher.expire()`.
-18. **Rate limit + search pagination.** Authenticated requests are capped per
-    channel (`api.rate_limit_per_minute`, Redis counter). Trip search returns
-    `{items, total, limit, offset}` with `api.search_page_size` as default.
+18. **Rate limit + optional search slicing.** Authenticated requests are capped
+    per channel (`api.rate_limit_per_minute`, Redis counter). Trip search keeps
+    the original JSON **array** contract (`response[0].odId` still works);
+    optional `limit` / `offset` only slice that array.
 
 ## Error contract
 

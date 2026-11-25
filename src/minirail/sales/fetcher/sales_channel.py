@@ -18,7 +18,7 @@ class SalesChannelFetcher(SQLOneFetcher[SalesChannelSchema]):
     cache_enabled: ClassVar[bool] = True
     # Keep short: deactivating a channel is a security action; a long TTL
     # leaves a revoked key usable until expiry (writes should still call
-    # SalesChannelFetcher.expire()). Matches api.auth_cache_ttl_seconds.
+    # SalesChannelFetcher.expire()). Keep in sync with api.auth_cache_ttl_seconds.
     cache_ttl_seconds: ClassVar[int] = 60
 
     @property

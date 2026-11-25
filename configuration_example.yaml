@@ -37,5 +37,6 @@ api:
   auth_cache_ttl_seconds: 60
   # Soft ceiling on authenticated requests per sales channel per minute.
   rate_limit_per_minute: 120
-  # Default page size for trip search results.
+  # Reserved for ops tooling; trip search returns a full JSON array by default
+  # (optional limit/offset only slice that array — never a page object).
   search_page_size: 50
