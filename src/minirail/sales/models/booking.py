@@ -65,6 +65,13 @@ class Booking(Base):
     )
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     currency: Mapped[str] = mapped_column(String(3), default="EUR")
+    # Company-wide floor below which a discount must not apply. Lives on the
+    # booking (not DiscountCode): the threshold is a global config value that
+    # will be copied onto each booking at sale time so a later config change
+    # cannot rewrite the rule that was applied to this sale — same idea as
+    # Ticket.price_at_sale. Null on bookings created before that snapshotting
+    # existed, or when no threshold was in force.
+    min_price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     # While PENDING: the moment the expiry actor may release the held seats.
     # Cleared on confirmation.
     expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
