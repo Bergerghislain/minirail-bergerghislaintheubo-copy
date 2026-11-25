@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MINIRAIL_DB_DSN: postgresql+psycopg://minirail:minirail@localhost:5432/minirail
+  MINIRAIL_REDIS_DSN: redis://localhost:6379/0
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - run: uv sync --group dev
+      - run: uv run ruff check src tests alembic
+      - run: uv run ruff format --check src tests alembic
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - run: uv sync --group dev
+      - run: uv run pyright
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: ghcr.io/pgmq/pg17-pgmq:latest
+        env:
+          POSTGRES_USER: minirail
+          POSTGRES_PASSWORD: minirail
+          POSTGRES_DB: minirail
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U minirail"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - name: Enable pgmq extensions
+        env:
+          PGPASSWORD: minirail
+        run: |
+          psql -h localhost -U minirail -d minirail -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS pg_partman CASCADE;
+          CREATE EXTENSION IF NOT EXISTS pgmq CASCADE;
+          SQL
+      - run: uv sync --group dev
+      - run: uv run pytest
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      # Plain Postgres: migrations do not need pgmq/partman. Using the pgmq
+      # image without filtering made `alembic check` see extension tables.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: minirail
+          POSTGRES_PASSWORD: minirail
+          POSTGRES_DB: minirail
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U minirail"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - run: uv sync --group dev
+      # Empty DB: apply the full chain, then prove models and migrations agree.
+      - run: uv run alembic upgrade head
+      - run: uv run alembic check

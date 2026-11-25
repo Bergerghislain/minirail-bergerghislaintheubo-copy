@@ -5,7 +5,7 @@ import factory
 from factory.alchemy import SQLAlchemyModelFactory
 
 from minirail.inventory.models import OD, Leg, Route, Service, Station
-from minirail.sales.models import Booking, Passenger, SalesChannel, Ticket
+from minirail.sales.models import Booking, DiscountCode, Passenger, SalesChannel, Ticket
 from minirail.utils.date_utils import utc_now
 
 
@@ -77,6 +77,16 @@ class SalesChannelFactory(BaseFactory):
     api_key = factory.Sequence(lambda n: f"test-api-key-{n}")
 
 
+class DiscountCodeFactory(BaseFactory):
+    class Meta:
+        model = DiscountCode
+
+    sales_channel = factory.SubFactory(SalesChannelFactory)
+    code = factory.Sequence(lambda n: f"PROMO{n}")
+    percent_off = Decimal("10.00")
+    max_uses = 5
+
+
 class BookingFactory(BaseFactory):
     class Meta:
         model = Booking
@@ -112,6 +122,7 @@ ALL_FACTORIES: list[type[BaseFactory]] = [
     LegFactory,
     ODFactory,
     SalesChannelFactory,
+    DiscountCodeFactory,
     BookingFactory,
     PassengerFactory,
     TicketFactory,

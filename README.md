@@ -51,6 +51,9 @@ curl -H "$KEY" -H "Content-Type: application/json" -X POST http://127.0.0.1:8000
   -d '{"odId": <odId>, "passengers": [{"firstName": "Ada", "lastName": "Lovelace"}, {"firstName": "Alan", "lastName": "Turing"}]}'
 # → 201 with a PENDING booking; note its "bookingKey". Seats are now held:
 #   re-run the search and watch remainingSeats drop.
+# Add "discountCode": "SAVE10" to the payload for 10% off (seeded by `make seed`);
+#   the response then carries "discountAmount" and "discountCode".
+# Optional: send Idempotency-Key so a client retry does not create a second booking.
 
 # 3. Confirm (pay) the booking — any token works except "tok_declined"
 curl -H "$KEY" -H "Content-Type: application/json" -X POST \
@@ -78,7 +81,10 @@ make fmt         # auto-fix and format
 
 The test harness (see [tests/conftest.py](tests/conftest.py)) recreates a
 dedicated `minirail_test` database per run and isolates each test in a
-rolled-back transaction.
+rolled-back transaction. CI (`.github/workflows/ci.yml`) runs the same
+checks plus a `migrations` job (`alembic upgrade head` then `alembic check`
+on an empty database) against PostgreSQL + Redis, using `MINIRAIL_DB_DSN` /
+`MINIRAIL_REDIS_DSN`.
 
 ## Configuration
 
@@ -119,6 +125,7 @@ The layering rules are enforced by
 | `make redis-cli` | redis-cli shell |
 | `uv run minirail expire-stale-bookings` | ops fallback: expire overdue PENDING bookings now |
 | `uv run minirail create-sales-channel NAME` | create a channel, print its API key |
+| `uv run minirail create-discount-code NAME CODE --percent-off 10 --max-uses 100 [--valid-until 2026-12-31]` | create a promotion code for a channel (date-only `--valid-until` = end of that UTC day; at most 2 decimal places on `--percent-off`) |
 | `uv run minirail init-demo-data --force` | wipe everything and reseed |
 | `uv run alembic revision --autogenerate -m "..."` | generate a migration from model changes |
 

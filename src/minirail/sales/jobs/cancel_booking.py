@@ -4,15 +4,27 @@ from typing import ClassVar, override
 from minirail.orm import MinirailSession
 from minirail.sales.models import Booking, BookingStatusEnum, TicketStatusEnum
 from minirail.sales.service.booking import get_booking_by_key, release_seats_for_booking
+from minirail.sales.service.discount_code import release_discount_use
 from minirail.utils.exc import BookingNotPendingException, ItemNotFoundException
 from minirail.utils.job import BaseJob
 
-CANCELLABLE_STATUSES = (BookingStatusEnum.PENDING, BookingStatusEnum.CONFIRMED)
+# CONFIRMING is cancellable: payment never completed, so the promo use returns.
+CANCELLABLE_STATUSES = (
+    BookingStatusEnum.PENDING,
+    BookingStatusEnum.CONFIRMING,
+    BookingStatusEnum.CONFIRMED,
+)
+_RELEASE_DISCOUNT_STATUSES = (BookingStatusEnum.PENDING, BookingStatusEnum.CONFIRMING)
 
 
 @dataclass(kw_only=True)
 class CancelBookingJob(BaseJob[Booking]):
-    """Cancel a PENDING or CONFIRMED booking and give its seats back."""
+    """Cancel a PENDING, CONFIRMING or CONFIRMED booking and give its seats back.
+
+    A discount use is given back only when payment never completed. Cancelling
+    a confirmed booking keeps the use consumed: the promotion did apply to a
+    paid sale.
+    """
 
     business_exceptions: ClassVar = (ItemNotFoundException, BookingNotPendingException)
 
@@ -27,10 +39,13 @@ class CancelBookingJob(BaseJob[Booking]):
         if booking.status not in CANCELLABLE_STATUSES:
             raise BookingNotPendingException(f"Booking is {booking.status} and cannot be cancelled")
 
+        was_unpaid = booking.status in _RELEASE_DISCOUNT_STATUSES
         booking.status = BookingStatusEnum.CANCELLED
         booking.expires_at = None
         for ticket in booking.tickets:
             ticket.status = TicketStatusEnum.CANCELLED
         release_seats_for_booking(self.session, booking)
+        if was_unpaid and booking.discount_code_id is not None:
+            release_discount_use(self.session, booking)
         self.session.flush()
         self.set_output(booking)
