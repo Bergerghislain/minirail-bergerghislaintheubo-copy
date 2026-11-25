@@ -100,7 +100,7 @@ jobs:
       - run: uv run alembic upgrade head
       - name: Assert single alembic head
         run: |
-          heads=$(uv run alembic heads -q | wc -l)
+          heads=$(uv run alembic heads | wc -l)
           echo "heads=$heads"
           test "$heads" -eq 1
           uv run alembic current
