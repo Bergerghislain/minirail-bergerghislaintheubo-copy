@@ -33,11 +33,14 @@ def create_booking_via_api(
     session: Session,
     od_id: int,
     passenger_count: int = 2,
+    discount_code: str | None = None,
 ) -> dict[str, Any]:
-    payload = {
+    payload: dict[str, Any] = {
         "odId": od_id,
         "passengers": [{"firstName": "Ada", "lastName": f"Lovelace-{i}"} for i in range(passenger_count)],
     }
+    if discount_code is not None:
+        payload["discountCode"] = discount_code
     response = client.post("/api/bookings/", headers=headers, json=payload)
     assert response.status_code == 201, response.text
     # The request ran on a sibling session; expire this session's identity map

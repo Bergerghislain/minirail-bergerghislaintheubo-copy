@@ -28,3 +28,5 @@ api:
   # A PENDING booking holds its seats for this long before the expiry actor
   # releases them.
   booking_ttl_seconds: 900
+  # Company-wide minimum booking total (pre-discount) to apply a promo code.
+  discount_min_price: "0.00"

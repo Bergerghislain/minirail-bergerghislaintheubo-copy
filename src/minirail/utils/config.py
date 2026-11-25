@@ -1,5 +1,6 @@
 import logging
 import os
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,9 @@ class BrokerConfig(BaseModel):
 
 class ApiConfig(BaseModel):
     booking_ttl_seconds: int = 900
+    # Company-wide floor: a discount may only apply when the (pre-discount)
+    # booking total is at least this amount. Snapshotted onto Booking.min_price.
+    discount_min_price: Decimal = Decimal("0.00")
 
 
 class Configuration(BaseModel):

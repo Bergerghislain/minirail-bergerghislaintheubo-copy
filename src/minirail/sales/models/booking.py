@@ -12,6 +12,7 @@ from minirail.orm import Base, UTCDateTime
 from minirail.utils.date_utils import utc_now
 
 if TYPE_CHECKING:
+    from minirail.sales.models.discount_code import DiscountCode
     from minirail.sales.models.passenger import Passenger
     from minirail.sales.models.sales_channel import SalesChannel
     from minirail.sales.models.ticket import Ticket
@@ -72,6 +73,10 @@ class Booking(Base):
     # Ticket.price_at_sale. Null on bookings created before that snapshotting
     # existed, or when no threshold was in force.
     min_price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    # Optional promo applied at creation. Discount lives on the booking total
+    # only — ticket.price_at_sale stays the OD list price.
+    discount_code_id: Mapped[int | None] = mapped_column(ForeignKey("discount_code.id"))
+    discount_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     # While PENDING: the moment the expiry actor may release the held seats.
     # Cleared on confirmation.
     expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
@@ -79,5 +84,11 @@ class Booking(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
     sales_channel: Mapped[SalesChannel] = relationship()
+    applied_discount: Mapped[DiscountCode | None] = relationship()
     passengers: Mapped[list[Passenger]] = relationship(back_populates="booking")
     tickets: Mapped[list[Ticket]] = relationship(back_populates="booking")
+
+    @property
+    def discount_code(self) -> str | None:
+        """Public code string for API output (None when no promo was applied)."""
+        return None if self.applied_discount is None else self.applied_discount.code
