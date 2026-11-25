@@ -22,6 +22,9 @@ Percent-off promo codes owned by a sales channel, applied at booking creation on
    - gross total `< min_price` → `discount_not_applicable` (400)
 6. **Journal `discount_redemption`**: RESERVED → RELEASED | CONSUMED; `use_count` stays the fast quota. Release/consume via atomic `UPDATE … WHERE status = RESERVED`.
 7. **Optional `Idempotency-Key`** on `POST /api/bookings/` (per sales channel): same key + same body → replay same booking (no duplicate side effects); same key + different body → `idempotency_key_conflict` (409).
+8. **Transactional outbox** for `expire_booking`: row written in the same TX as the PENDING booking; remoulade publish happens in a post-commit drain. Avoids enqueueing a message for a booking that never committed.
+
+   **Limit without a periodic drain:** if the process dies after the booking+outbox commit but before drain, the row stays `published_at IS NULL` until something drains again (today: the next successful create, or seed). Seats are still recoverable via `expire-stale-bookings`; the delayed actor path for that booking stays idle until then.
 
 ## Out of scope
 

@@ -30,12 +30,15 @@ def test_create_booking_happy_path(
     legs = session.scalars(select(Leg).where(Leg.service_id == paris_marseille_od.service_id)).all()
     assert [leg.seats_booked for leg in legs] == [2, 2]
 
-    # The expiry message is scheduled at creation time, delayed by the TTL.
+    # Expiry is published from the transactional outbox after commit; remaining
+    # delay is TTL minus time spent sitting unpublished (usually ~0-a few ms).
     expiry_messages = [(m, delay) for m, delay in sent_messages if m.actor_name == "expire_booking"]
     assert len(expiry_messages) == 1
     booking = session.scalars(select(Booking).where(Booking.booking_key == body["bookingKey"])).one()
     assert expiry_messages[0][0].args == (booking.id,)
-    assert expiry_messages[0][1] == get_app().configuration.api.booking_ttl_seconds * 1000
+    ttl_ms = get_app().configuration.api.booking_ttl_seconds * 1000
+    assert expiry_messages[0][1] is not None
+    assert 0 <= expiry_messages[0][1] <= ttl_ms
 
 
 def test_create_booking_sold_out(

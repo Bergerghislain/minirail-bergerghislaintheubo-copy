@@ -102,6 +102,12 @@ def init_demo_data(force: bool) -> None:
                 session.execute(text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE"))
             summary = create_demo_data(session)
             session.commit()
+        # Publish expiry outbox rows written during seed (same post-commit drain as the API).
+        from minirail.sales.service.outbox import drain_booking_expiry_outbox
+
+        with get_session() as session:
+            drain_booking_expiry_outbox(session)
+            session.commit()
     except ProgrammingError as exc:
         raise click.ClickException(
             f"Database schema missing or out of date — did you run 'make migrate' first? ({exc.orig})"

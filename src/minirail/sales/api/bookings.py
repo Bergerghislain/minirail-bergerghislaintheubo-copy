@@ -11,7 +11,6 @@ from fastapi import APIRouter, Depends, Header, Response
 from sqlalchemy.orm import Session
 
 from minirail.inventory.fetcher.trip_search import TripSearchFetcher
-from minirail.sales.actors.booking_expiry import expire_booking
 from minirail.sales.actors.notifications import send_booking_notification
 from minirail.sales.fetcher.booking import BookingFetcher
 from minirail.sales.jobs.cancel_booking import CancelBookingJob
@@ -24,8 +23,8 @@ from minirail.sales.service.idempotency import (
     resolve_booking_idempotency,
     store_booking_idempotency,
 )
+from minirail.sales.service.outbox import drain_booking_expiry_outbox
 from minirail.utils.api import session_transaction
-from minirail.utils.app import get_app
 from minirail.utils.auth import CurrentSalesChannel
 
 router = APIRouter(prefix="/api/bookings", tags=["sales"])
@@ -70,10 +69,10 @@ def create_booking(
             request_hash=request_hash,
             booking_id=booking.id,
         )
+    # Booking + outbox row commit together; then drain publishes to remoulade.
     session.commit()
-
-    ttl_ms = get_app().configuration.api.booking_ttl_seconds * 1000
-    expire_booking.send_with_options(args=(booking.id,), delay=ttl_ms)
+    drain_booking_expiry_outbox(session)
+    session.commit()
     TripSearchFetcher.expire()
     return BookingFetcher(session).get_by_key_or_raise(booking.booking_key)
 

@@ -14,6 +14,7 @@ from minirail.sales.service.discount_code import (
     reserve_discount_use,
     validate_discount_code,
 )
+from minirail.sales.service.outbox import schedule_booking_expiry
 from minirail.utils.app import get_app
 from minirail.utils.date_utils import utc_now
 from minirail.utils.exc import (
@@ -33,6 +34,9 @@ class CreateBookingJob(BaseJob[Booking]):
 
     Lock order is stable: seats first, then the discount row (FOR UPDATE), so
     concurrent bookings cannot deadlock on crossed lock acquisition.
+
+    Schedules ``expire_booking`` via the transactional outbox (same TX); the
+    API/CLI drains the outbox to remoulade after commit.
     """
 
     business_exceptions: ClassVar = (
@@ -75,7 +79,8 @@ class CreateBookingJob(BaseJob[Booking]):
             discount_amount = compute_discount_amount(gross_total, discount.percent_off)
             total_amount = gross_total - discount_amount
 
-        ttl = timedelta(seconds=get_app().configuration.api.booking_ttl_seconds)
+        ttl_seconds = get_app().configuration.api.booking_ttl_seconds
+        ttl = timedelta(seconds=ttl_seconds)
         booking = create_booking_rows(
             self.session,
             sales_channel_id=self.sales_channel_id,
@@ -90,4 +95,5 @@ class CreateBookingJob(BaseJob[Booking]):
         if discount is not None:
             # Journal needs booking.id; reserve after the booking row exists.
             reserve_discount_use(self.session, discount, booking)
+        schedule_booking_expiry(self.session, booking_id=booking.id, delay_ms=ttl_seconds * 1000)
         self.set_output(booking)
