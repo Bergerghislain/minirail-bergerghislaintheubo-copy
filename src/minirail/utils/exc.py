@@ -9,8 +9,11 @@ class ErrorCodeEnum(StrEnum):
     """
 
     BOOKING_NOT_PENDING = auto()
+    DISCOUNT_CODE_EXHAUSTED = auto()
+    DISCOUNT_NOT_APPLICABLE = auto()
     INTERNAL_ERROR = auto()
     INVALID_API_KEY = auto()
+    INVALID_DISCOUNT_CODE = auto()
     ITEM_NOT_FOUND = auto()
     PAYMENT_DECLINED = auto()
     SERVICE_UNAVAILABLE = auto()
@@ -63,3 +66,24 @@ class InvalidAPIKeyException(MinirailException):
 class ServiceUnavailableException(MinirailException):
     http_status_code = 503
     error_code = ErrorCodeEnum.SERVICE_UNAVAILABLE
+
+
+class InvalidDiscountCodeException(MinirailException):
+    """Unknown, inactive, expired, or belonging to another sales channel.
+
+    These cases share one public error code so a client cannot probe whether
+    a code exists on a different partner.
+    """
+
+    http_status_code = 400
+    error_code = ErrorCodeEnum.INVALID_DISCOUNT_CODE
+
+
+class DiscountCodeExhaustedException(MinirailException):
+    http_status_code = 409
+    error_code = ErrorCodeEnum.DISCOUNT_CODE_EXHAUSTED
+
+
+class DiscountNotApplicableException(MinirailException):
+    http_status_code = 400
+    error_code = ErrorCodeEnum.DISCOUNT_NOT_APPLICABLE
