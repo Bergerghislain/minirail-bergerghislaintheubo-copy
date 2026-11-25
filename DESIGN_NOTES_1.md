@@ -25,7 +25,8 @@ Sales channels can create percent-off promo codes and pass them when booking.
 
 - Fixed-amount discounts, stacking several codes, per-passenger discounts
 - Soft deletes / audit log of redemptions beyond `use_count`
-- REST endpoints to list/manage codes
+- REST endpoints to list/manage codes (CLI only)
+- Adding a discount to an already-created booking (apply at creation only)
 - Changing ticket `price_at_sale` when a discount applies (discount lives on the booking total only)
 - Redis / cache invalidation around discount codes (they are not cached reads)
 

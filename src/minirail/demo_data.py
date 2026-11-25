@@ -15,10 +15,11 @@ from minirail.inventory.models import OD, Leg, Route, Service, Station
 from minirail.orm import MinirailSession
 from minirail.sales.jobs.confirm_booking import ConfirmBookingJob
 from minirail.sales.jobs.create_booking import CreateBookingJob
-from minirail.sales.models import SalesChannel
+from minirail.sales.models import DiscountCode, SalesChannel
 from minirail.sales.schemas.booking import PassengerInputSchema
 
 DEMO_API_KEY = "demo-channel-key"
+DEMO_DISCOUNT_CODE = "SAVE10"
 DEMO_DAYS = 14
 SEAT_CAPACITY = 6  # small on purpose: sold-out situations are reachable by hand
 
@@ -50,6 +51,7 @@ _DEPARTURE_HOURS = [8, 16]
 @dataclass
 class DemoSummary:
     api_key: str
+    discount_code: str
     service_count: int
     first_date: date
     sample_search_od: tuple[str, str]
@@ -83,10 +85,21 @@ def create_demo_data(session: MinirailSession) -> DemoSummary:
     session.add(channel)
     session.flush()
 
+    session.add(
+        DiscountCode(
+            sales_channel=channel,
+            code=DEMO_DISCOUNT_CODE,
+            percent_off=10,
+            max_uses=100,
+        )
+    )
+    session.flush()
+
     confirmed_key, pending_key = _create_sample_bookings(session, channel, stations, first_date)
 
     return DemoSummary(
         api_key=DEMO_API_KEY,
+        discount_code=DEMO_DISCOUNT_CODE,
         service_count=service_count,
         first_date=first_date,
         sample_search_od=("FRPAR", "FRMRS"),
