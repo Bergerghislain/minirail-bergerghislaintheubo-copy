@@ -53,11 +53,15 @@ class SQLBaseFetcher[OutputT: Schema](ABC):
             return None
         return get_app().redis.get(cache_key(self.cache_group(), identifier))
 
+    def _cache_ttl_seconds(self) -> int:
+        """Effective Redis TTL for this fetcher. Subclasses may read config."""
+        return type(self).cache_ttl_seconds
+
     @handle_redis_connection_error
     def _cache_write(self, identifier: str, payload: bytes) -> None:
         if not self.cache_enabled:
             return
-        get_app().redis.set(cache_key(self.cache_group(), identifier), payload, ex=self.cache_ttl_seconds)
+        get_app().redis.set(cache_key(self.cache_group(), identifier), payload, ex=self._cache_ttl_seconds())
 
     def _cached_one(self, identifier: str) -> OutputT | None:
         payload = self._cache_read(identifier)

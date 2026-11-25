@@ -39,6 +39,13 @@ class ApiConfig(BaseModel):
     # Company-wide floor: a discount may only apply when the (pre-discount)
     # booking total is at least this amount. Snapshotted onto Booking.min_price.
     discount_min_price: Decimal = Decimal("0.00")
+    # How long a resolved X-API-Key → sales channel stays in Redis. Bounds how
+    # long a deactivated channel keeps working after SalesChannelFetcher.expire()
+    # is *not* called.
+    auth_cache_ttl_seconds: int = 60
+    # Soft per-channel quota (requests / rolling 60s window). Over-limit requests
+    # are still served; response headers flag the exceedance. 0 disables.
+    rate_limit_per_minute: int = 120
 
 
 class Configuration(BaseModel):

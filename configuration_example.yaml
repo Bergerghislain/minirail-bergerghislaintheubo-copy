@@ -30,3 +30,9 @@ api:
   booking_ttl_seconds: 900
   # Company-wide minimum booking total (pre-discount) to apply a promo code.
   discount_min_price: "0.00"
+  # Redis TTL for the X-API-Key → sales channel cache (SalesChannelFetcher).
+  auth_cache_ttl_seconds: 60
+  # Soft per-channel rate limit (requests per rolling minute). Over-limit
+  # requests are still served; X-RateLimit-* headers flag the exceedance.
+  # Set to 0 to disable.
+  rate_limit_per_minute: 120
