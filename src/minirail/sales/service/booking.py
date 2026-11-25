@@ -5,13 +5,14 @@ Everything here flushes and never commits — the caller owns the transaction.
 
 from collections import Counter
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import select
 
 from minirail.inventory.models import OD
 from minirail.inventory.service.seat_inventory import release_seats
 from minirail.orm import MinirailSession
-from minirail.sales.models import Booking, Passenger, Ticket
+from minirail.sales.models import Booking, DiscountCode, Passenger, Ticket
 
 
 def get_booking_by_key(session: MinirailSession, booking_key: str) -> Booking | None:
@@ -32,16 +33,26 @@ def create_booking_rows(
     od: OD,
     passenger_names: list[tuple[str, str]],
     expires_at: datetime,
+    total_amount: Decimal,
+    min_price: Decimal,
+    discount: DiscountCode | None = None,
+    discount_amount: Decimal | None = None,
 ) -> Booking:
     """Create the PENDING booking with its passengers and HELD tickets.
 
-    Seat inventory is NOT touched here — hold_seats() is a separate primitive
-    and the job composes the two.
+    Seat inventory and discount quota are NOT touched here — hold_seats() /
+    reserve_discount_use() are separate primitives and the job composes them.
+
+    ``total_amount`` is the amount charged (after any discount). Ticket
+    ``price_at_sale`` stays the OD list price regardless of promo.
     """
     booking = Booking(
         sales_channel_id=sales_channel_id,
-        total_amount=od.price * len(passenger_names),
+        total_amount=total_amount,
         currency=od.currency,
+        min_price=min_price,
+        discount_code_id=None if discount is None else discount.id,
+        discount_amount=discount_amount,
         expires_at=expires_at,
     )
     session.add(booking)

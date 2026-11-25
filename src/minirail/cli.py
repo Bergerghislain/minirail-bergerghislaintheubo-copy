@@ -81,7 +81,7 @@ def expire_stale_bookings() -> None:
 @click.option("--force", is_flag=True, help="Recreate the demo dataset even if it already exists (wipes ALL data).")
 def init_demo_data(force: bool) -> None:
     """Load the demo dataset: stations, routes, 14 days of services, a sales
-    channel, and two sample bookings."""
+    channel, SAVE10 discount code, and two sample bookings."""
     from sqlalchemy import text
     from sqlalchemy.exc import ProgrammingError
 
@@ -102,6 +102,12 @@ def init_demo_data(force: bool) -> None:
                 session.execute(text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE"))
             summary = create_demo_data(session)
             session.commit()
+        # Publish expiry outbox rows written during seed (same post-commit drain as the API).
+        from minirail.sales.service.outbox import drain_booking_expiry_outbox
+
+        with get_session() as session:
+            drain_booking_expiry_outbox(session)
+            session.commit()
     except ProgrammingError as exc:
         raise click.ClickException(
             f"Database schema missing or out of date — did you run 'make migrate' first? ({exc.orig})"
@@ -110,6 +116,7 @@ def init_demo_data(force: bool) -> None:
     date_str = summary.first_date.isoformat()
     click.echo(f"Seeded {summary.service_count} services starting {date_str}.")
     click.echo(f"API key: {summary.api_key}")
+    click.echo(f"Demo discount code: {summary.discount_code} (10% off, 100 uses)")
     click.echo(f"Confirmed sample booking: {summary.confirmed_booking_key}")
     click.echo(f"Pending sample booking:   {summary.pending_booking_key} (expires in 15 min)")
     click.echo("\nTry it:")
@@ -131,3 +138,76 @@ def create_sales_channel(name: str) -> None:
         session.add(SalesChannel(name=name, api_key=api_key))
         session.commit()
     click.echo(f"Sales channel {name!r} created, API key: {api_key}")
+
+
+@cli.command("create-discount-code")
+@click.argument("channel_name")
+@click.argument("code")
+@click.option("--percent-off", type=int, required=True, help="Whole percent points, e.g. 10 for 10% off.")
+@click.option("--max-uses", type=int, required=True, help="Hard cap on redemptions (reserved at booking creation).")
+@click.option(
+    "--valid-until",
+    default=None,
+    help="Optional ISO-8601 expiry datetime; naive values are treated as UTC.",
+)
+def create_discount_code(
+    channel_name: str, code: str, percent_off: int, max_uses: int, valid_until: str | None
+) -> None:
+    """Create a percent-off promo code for a sales channel.
+
+    Codes apply only at booking creation (POST /api/bookings/), never on an
+    existing booking.
+    """
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+    from sqlalchemy.exc import IntegrityError
+
+    from minirail.sales.models import DiscountCode, SalesChannel
+    from minirail.sales.service.discount_code import normalize_discount_code
+    from minirail.utils.app import get_session
+
+    normalized = normalize_discount_code(code)
+    if not normalized or len(normalized) > 32:
+        raise click.ClickException("Code must be 1-32 characters after trim/uppercase normalization")
+    if not 1 <= percent_off <= 100:
+        raise click.ClickException("--percent-off must be between 1 and 100")
+    if max_uses < 1:
+        raise click.ClickException("--max-uses must be at least 1")
+
+    parsed_valid_until: datetime | None = None
+    if valid_until is not None:
+        try:
+            parsed_valid_until = datetime.fromisoformat(valid_until)
+        except ValueError as exc:
+            raise click.ClickException(f"Invalid --valid-until {valid_until!r}: expected ISO-8601 datetime") from exc
+        if parsed_valid_until.tzinfo is None:
+            parsed_valid_until = parsed_valid_until.replace(tzinfo=UTC)
+        else:
+            parsed_valid_until = parsed_valid_until.astimezone(UTC)
+
+    with get_session() as session:
+        channel = session.scalars(select(SalesChannel).where(SalesChannel.name == channel_name)).one_or_none()
+        if channel is None:
+            raise click.ClickException(f"Unknown sales channel {channel_name!r}")
+        session.add(
+            DiscountCode(
+                sales_channel=channel,
+                code=normalized,
+                percent_off=percent_off,
+                max_uses=max_uses,
+                valid_until=parsed_valid_until,
+            )
+        )
+        try:
+            session.commit()
+        except IntegrityError as exc:
+            raise click.ClickException(
+                f"Discount code {normalized!r} already exists for channel {channel_name!r}"
+            ) from exc
+
+    expiry = "none" if parsed_valid_until is None else parsed_valid_until.isoformat()
+    click.echo(
+        f"Discount code {normalized!r} created for channel {channel_name!r} "
+        f"({percent_off}% off, max {max_uses} uses, valid_until={expiry})"
+    )

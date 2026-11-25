@@ -4,6 +4,7 @@ from typing import ClassVar, override
 from minirail.orm import MinirailSession
 from minirail.sales.models import Booking, BookingStatusEnum, TicketStatusEnum
 from minirail.sales.service.booking import get_booking_by_key
+from minirail.sales.service.discount_code import consume_discount_use_for_booking
 from minirail.utils import payments
 from minirail.utils.date_utils import utc_now
 from minirail.utils.exc import BookingNotPendingException, ItemNotFoundException, PaymentDeclinedException
@@ -40,5 +41,6 @@ class ConfirmBookingJob(BaseJob[Booking]):
         booking.expires_at = None
         for ticket in booking.tickets:
             ticket.status = TicketStatusEnum.CONFIRMED
+        consume_discount_use_for_booking(self.session, booking)
         self.session.flush()
         self.set_output(booking)

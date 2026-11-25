@@ -6,6 +6,7 @@ from sqlalchemy import select
 from minirail.orm import MinirailSession
 from minirail.sales.models import Booking, BookingStatusEnum, TicketStatusEnum
 from minirail.sales.service.booking import get_booking_by_id, release_seats_for_booking
+from minirail.sales.service.discount_code import release_discount_use_for_booking
 from minirail.utils.date_utils import utc_now
 from minirail.utils.job import BaseJob
 
@@ -19,6 +20,8 @@ class ExpireBookingJob(BaseJob[bool]):
     in the meantime, and possibly more than once if a message is redelivered.
     The job therefore checks the status first and leaves anything that is no
     longer PENDING untouched.
+
+    Any discount use reserved at creation is released with the unpaid hold.
     """
 
     session: MinirailSession
@@ -40,6 +43,7 @@ class ExpireBookingJob(BaseJob[bool]):
         for ticket in booking.tickets:
             ticket.status = TicketStatusEnum.EXPIRED
         release_seats_for_booking(self.session, booking)
+        release_discount_use_for_booking(self.session, booking)
         self.session.flush()
         self.set_output(True)
 

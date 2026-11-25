@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: make lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: make typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: minirail
+          POSTGRES_PASSWORD: minirail
+          POSTGRES_DB: minirail
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U minirail"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    env:
+      MINIRAIL_DB_DSN: postgresql+psycopg://minirail:minirail@localhost:5432/minirail
+      MINIRAIL_REDIS_DSN: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - run: make test
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: minirail
+          POSTGRES_PASSWORD: minirail
+          POSTGRES_DB: minirail
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U minirail"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    env:
+      MINIRAIL_DB_DSN: postgresql+psycopg://minirail:minirail@localhost:5432/minirail
+      MINIRAIL_REDIS_DSN: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      # Apply the full alembic chain on an empty database (the test suite builds
+      # from model metadata instead — see tests/conftest.py). Assert a single head.
+      - run: uv run alembic upgrade head
+      - name: Assert single alembic head
+        run: |
+          heads=$(uv run alembic heads | wc -l)
+          echo "heads=$heads"
+          test "$heads" -eq 1
+          uv run alembic current

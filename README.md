@@ -119,6 +119,7 @@ The layering rules are enforced by
 | `make redis-cli` | redis-cli shell |
 | `uv run minirail expire-stale-bookings` | ops fallback: expire overdue PENDING bookings now |
 | `uv run minirail create-sales-channel NAME` | create a channel, print its API key |
+| `uv run minirail create-discount-code CHANNEL CODE --percent-off 10 --max-uses 100` | create a percent-off promo for a channel |
 | `uv run minirail init-demo-data --force` | wipe everything and reseed |
 | `uv run alembic revision --autogenerate -m "..."` | generate a migration from model changes |
 
