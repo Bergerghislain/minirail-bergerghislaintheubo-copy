@@ -79,8 +79,10 @@ jobs:
   migrations:
     runs-on: ubuntu-latest
     services:
+      # Plain Postgres: migrations do not need pgmq/partman. Using the pgmq
+      # image without filtering made `alembic check` see extension tables.
       postgres:
-        image: ghcr.io/pgmq/pg17-pgmq:latest
+        image: postgres:17
         env:
           POSTGRES_USER: minirail
           POSTGRES_PASSWORD: minirail
@@ -92,28 +94,11 @@ jobs:
           --health-interval 2s
           --health-timeout 2s
           --health-retries 20
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.14"
-      - name: Enable pgmq extensions
-        env:
-          PGPASSWORD: minirail
-        run: |
-          psql -h localhost -U minirail -d minirail -v ON_ERROR_STOP=1 <<'SQL'
-          CREATE EXTENSION IF NOT EXISTS pg_partman CASCADE;
-          CREATE EXTENSION IF NOT EXISTS pgmq CASCADE;
-          SQL
       - run: uv sync --group dev
       # Empty DB: apply the full chain, then prove models and migrations agree.
       - run: uv run alembic upgrade head
