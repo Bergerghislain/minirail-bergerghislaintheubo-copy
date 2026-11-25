@@ -21,6 +21,7 @@ Percent-off promo codes owned by a sales channel, applied at booking creation on
    - `use_count >= max_uses` → `discount_code_exhausted` (409)
    - gross total `< min_price` → `discount_not_applicable` (400)
 6. **Journal `discount_redemption`**: RESERVED → RELEASED | CONSUMED; `use_count` stays the fast quota. Release/consume via atomic `UPDATE … WHERE status = RESERVED`.
+7. **Optional `Idempotency-Key`** on `POST /api/bookings/` (per sales channel): same key + same body → replay same booking (no duplicate side effects); same key + different body → `idempotency_key_conflict` (409).
 
 ## Out of scope
 

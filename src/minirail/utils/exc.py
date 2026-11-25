@@ -11,6 +11,7 @@ class ErrorCodeEnum(StrEnum):
     BOOKING_NOT_PENDING = auto()
     DISCOUNT_CODE_EXHAUSTED = auto()
     DISCOUNT_NOT_APPLICABLE = auto()
+    IDEMPOTENCY_KEY_CONFLICT = auto()
     INTERNAL_ERROR = auto()
     INVALID_API_KEY = auto()
     INVALID_DISCOUNT_CODE = auto()
@@ -87,3 +88,10 @@ class DiscountCodeExhaustedException(MinirailException):
 class DiscountNotApplicableException(MinirailException):
     http_status_code = 400
     error_code = ErrorCodeEnum.DISCOUNT_NOT_APPLICABLE
+
+
+class IdempotencyKeyConflictException(MinirailException):
+    """Same Idempotency-Key reused with a different request body."""
+
+    http_status_code = 409
+    error_code = ErrorCodeEnum.IDEMPOTENCY_KEY_CONFLICT
