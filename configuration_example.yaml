@@ -31,3 +31,11 @@ api:
   # Bookings cheaper than this cannot use a discount code. Quoted so it is
   # read as an exact decimal, never as a float.
   discount_min_price: "0.00"
+  # How long a sales-channel API-key lookup stays cached (seconds). Keep short
+  # so deactivating a channel takes effect quickly; also call
+  # SalesChannelFetcher.expire() after writes for an immediate cut-off.
+  auth_cache_ttl_seconds: 60
+  # Soft ceiling on authenticated requests per sales channel per minute.
+  rate_limit_per_minute: 120
+  # Default page size for trip search results.
+  search_page_size: 50

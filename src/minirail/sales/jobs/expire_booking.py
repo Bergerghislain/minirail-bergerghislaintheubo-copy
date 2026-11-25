@@ -20,7 +20,8 @@ class ExpireBookingJob(BaseJob[bool]):
     in the meantime, and possibly more than once if a message is redelivered.
     The job therefore checks the status first and leaves anything that is no
     longer PENDING untouched. A discount use reserved at creation goes back
-    with the seats.
+    with the seats. CONFIRMING bookings are left alone: payment may still be
+    in flight.
     """
 
     session: MinirailSession
@@ -42,8 +43,8 @@ class ExpireBookingJob(BaseJob[bool]):
         for ticket in booking.tickets:
             ticket.status = TicketStatusEnum.EXPIRED
         release_seats_for_booking(self.session, booking)
-        if booking.discount_code is not None:
-            release_discount_use(self.session, booking.discount_code)
+        if booking.discount_code_id is not None:
+            release_discount_use(self.session, booking)
         self.session.flush()
         self.set_output(True)
 

@@ -3,7 +3,8 @@ import secrets
 import signal
 import time
 from datetime import UTC, datetime
-from decimal import Decimal
+from datetime import time as time_of_day
+from decimal import Decimal, InvalidOperation
 from types import FrameType
 
 import click
@@ -144,12 +145,21 @@ def create_sales_channel(name: str) -> None:
 @click.argument("code")
 @click.option("--percent-off", required=True, type=click.STRING, help="Percentage off, e.g. 10 for 10%.")
 @click.option("--max-uses", required=True, type=click.INT, help="How many bookings may use the code.")
-@click.option("--valid-until", type=click.DateTime(), help="Last moment the code may be used (UTC).")
+@click.option(
+    "--valid-until",
+    type=click.DateTime(),
+    help=(
+        "Last moment the code may be used (UTC). A date alone is midnight UTC start "
+        "and is expanded to end of that day (23:59:59 UTC). To pin an exact instant, "
+        'pass a full timestamp, e.g. "YYYY-MM-DD 23:59:59".'
+    ),
+)
 def create_discount_code(
     sales_channel_name: str, code: str, percent_off: str, max_uses: int, valid_until: datetime | None
 ) -> None:
     """Create a discount code for an existing sales channel."""
     from sqlalchemy import select
+    from sqlalchemy.exc import IntegrityError
 
     from minirail.orm import load_model_registry
     from minirail.sales.models import DiscountCode, SalesChannel
@@ -158,11 +168,25 @@ def create_discount_code(
 
     load_model_registry()
     # Parsed from the string option: Decimal(float) would store 10.000000000000000555.
-    percentage = Decimal(percent_off)
+    try:
+        percentage = Decimal(percent_off)
+    except InvalidOperation as exc:
+        raise click.ClickException(f"--percent-off must be a number, got {percent_off!r}") from exc
+    # NUMERIC(5, 2) would silently round; refuse anything not exact at 0.01.
+    if percentage != percentage.quantize(Decimal("0.01")):
+        raise click.ClickException("--percent-off accepts at most 2 decimal places")
     if percentage <= 0 or percentage > 100:
         raise click.ClickException("--percent-off must be above 0 and at most 100")
     if max_uses < 1:
         raise click.ClickException("--max-uses must be at least 1")
+
+    # click.DateTime parses a date-only value as midnight; treat that as end of day
+    # so `--valid-until 2026-12-31` covers the whole of the 31st UTC.
+    resolved_until: datetime | None = None
+    if valid_until is not None:
+        if valid_until.time() == time_of_day(0, 0):
+            valid_until = valid_until.replace(hour=23, minute=59, second=59)
+        resolved_until = valid_until.replace(tzinfo=UTC)
 
     normalized = normalize_code(code)
     with get_session() as session:
@@ -175,8 +199,14 @@ def create_discount_code(
                 code=normalized,
                 percent_off=percentage,
                 max_uses=max_uses,
-                valid_until=valid_until.replace(tzinfo=UTC) if valid_until is not None else None,
+                valid_until=resolved_until,
             )
         )
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError as exc:
+            session.rollback()
+            raise click.ClickException(
+                f"Discount code {normalized!r} already exists for sales channel {sales_channel_name!r}"
+            ) from exc
     click.echo(f"Discount code {normalized!r} created for {sales_channel_name!r}: {percentage}% off, {max_uses} uses")

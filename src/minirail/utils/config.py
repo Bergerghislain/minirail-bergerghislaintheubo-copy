@@ -40,6 +40,13 @@ class ApiConfig(BaseModel):
     # threshold applies to every booking, whatever the code; it is copied onto
     # the booking at creation so past sales keep the rule they were sold under.
     discount_min_price: Decimal = Decimal("0.00")
+    # Auth hot-path cache (SalesChannelFetcher). Short by design so a revoked
+    # API key stops working quickly even without an explicit expire().
+    auth_cache_ttl_seconds: int = 60
+    # Soft ceiling on authenticated requests per sales channel per minute.
+    rate_limit_per_minute: int = 120
+    # Default page size for trip search results.
+    search_page_size: int = 50
 
 
 class Configuration(BaseModel):

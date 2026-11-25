@@ -13,10 +13,11 @@ from sqlalchemy import select
 
 from minirail.inventory.models import OD, Leg, Route, Service, Station
 from minirail.orm import MinirailSession
-from minirail.sales.jobs.confirm_booking import ConfirmBookingJob
+from minirail.sales.jobs.confirm_booking import ClaimConfirmBookingJob, FinalizeConfirmBookingJob
 from minirail.sales.jobs.create_booking import CreateBookingJob
 from minirail.sales.models import DiscountCode, SalesChannel
 from minirail.sales.schemas.booking import PassengerInputSchema
+from minirail.utils import payments
 
 DEMO_API_KEY = "demo-channel-key"
 DEMO_DISCOUNT_CODE = "SAVE10"
@@ -179,11 +180,13 @@ def _create_sample_bookings(
         od_id=od.id,
         passengers=[PassengerInputSchema(first_name="Grace", last_name="Hopper")],
     ).call_for_api()
-    ConfirmBookingJob(
-        session=session,
-        booking_key=confirmed.booking_key,
-        payment_token="tok_demo",  # noqa: S106 - fake gateway token, not a secret
-    ).call_for_api()
+    # Seed uses the same claim → charge → finalize shape as the API, without
+    # separate commits: the CLI owns the surrounding transaction.
+    claimed = ClaimConfirmBookingJob(session=session, booking_key=confirmed.booking_key).call_for_api()
+    charge = payments.charge("tok_demo", claimed.total_amount, claimed.currency)
+    if not charge.success:
+        raise RuntimeError(f"Demo payment failed: {charge.failure_reason}")
+    FinalizeConfirmBookingJob(session=session, booking_key=confirmed.booking_key).call_for_api()
 
     pending = CreateBookingJob(
         session=session,

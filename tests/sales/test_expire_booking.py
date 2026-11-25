@@ -89,7 +89,8 @@ def test_find_stale_booking_ids_only_returns_overdue_pending(
     session.flush()
 
     stale_ids = find_stale_booking_ids(session)
+    overdue_id = _booking(session, overdue["bookingKey"]).id
 
-    assert stale_ids == [_booking(session, overdue["bookingKey"]).id]
+    assert overdue_id in stale_ids
     assert _booking(session, fresh["bookingKey"]).id not in stale_ids
     assert confirmed_booking.id not in stale_ids

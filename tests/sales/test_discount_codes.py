@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from minirail.inventory.models import OD
 from minirail.sales.jobs.expire_booking import ExpireBookingJob
-from minirail.sales.models import Booking, DiscountCode, SalesChannel
+from minirail.sales.models import Booking, DiscountCode, DiscountRedemption, DiscountRedemptionStatusEnum, SalesChannel
 from minirail.utils.app import App
 from minirail.utils.date_utils import utc_now
 from tests.factories import DiscountCodeFactory, SalesChannelFactory
@@ -55,6 +55,9 @@ def test_booking_with_a_discount_code_pays_less(
     assert body["discountAmount"] == "16.00"
     assert body["discountCode"] == "SAVE10"
     assert _discount(session, "SAVE10").use_count == 1
+    redemption = session.scalars(select(DiscountRedemption)).one()
+    assert redemption.status is DiscountRedemptionStatusEnum.RESERVED
+    assert redemption.discount_code_id == _discount(session, "SAVE10").id
 
 
 def test_booking_without_a_discount_code_is_unchanged(
@@ -180,6 +183,7 @@ def test_cancelling_a_pending_booking_gives_the_use_back(
     session.expire_all()
 
     assert _discount(session, "FREE10").use_count == 0
+    assert session.scalars(select(DiscountRedemption)).one().status is DiscountRedemptionStatusEnum.RELEASED
 
 
 def test_expiring_a_pending_booking_gives_the_use_back(
@@ -212,3 +216,4 @@ def test_cancelling_a_confirmed_booking_keeps_the_use(
     session.expire_all()
 
     assert _discount(session, "KEEP10").use_count == 1
+    assert session.scalars(select(DiscountRedemption)).one().status is DiscountRedemptionStatusEnum.CONSUMED

@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from minirail.orm import Base, UTCDateTime
@@ -15,13 +15,22 @@ if TYPE_CHECKING:
 class DiscountCode(Base):
     """A promotional code owned by a sales channel (partner).
 
-    ``use_count`` is incremented when a booking is created with this code and
-    must stay <= ``max_uses``. A PENDING booking that expires or is cancelled
-    releases its use. Business logic for that lives outside this model.
+    ``use_count`` is a denormalized counter of non-released redemptions and
+    must stay <= ``max_uses``. The audit trail lives in ``discount_redemption``.
+    A PENDING/CONFIRMING booking that expires or is cancelled releases its use;
+    a confirmed booking keeps it consumed.
     """
 
     __tablename__ = "discount_code"
-    __table_args__ = (UniqueConstraint("sales_channel_id", "code", name="uq_discount_code_channel_code"),)
+    __table_args__ = (
+        UniqueConstraint("sales_channel_id", "code", name="uq_discount_code_channel_code"),
+        CheckConstraint("percent_off > 0 AND percent_off <= 100", name="percent_off_range"),
+        CheckConstraint("max_uses >= 1", name="max_uses_positive"),
+        CheckConstraint("use_count >= 0", name="use_count_non_negative"),
+        CheckConstraint("use_count <= max_uses", name="use_count_within_max"),
+        # Codes are stored uppercase; refuse a direct insert that bypasses the app.
+        CheckConstraint("code = upper(code)", name="code_uppercase"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     sales_channel_id: Mapped[int] = mapped_column(ForeignKey("sales_channel.id"))

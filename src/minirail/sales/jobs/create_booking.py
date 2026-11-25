@@ -37,7 +37,8 @@ class CreateBookingJob(BaseJob[Booking]):
     expires_at, when the expiry actor releases them.
 
     An optional discount code is validated against the calling sales channel,
-    reserves one use, and is applied as a percentage off the booking total.
+    reserves one use (journal + counter), and is applied as a percentage off
+    the booking total.
     """
 
     business_exceptions: ClassVar = (
@@ -77,7 +78,6 @@ class CreateBookingJob(BaseJob[Booking]):
                 sales_channel_id=self.sales_channel_id,
             )
             discount_amount = compute_discount_amount(full_amount=full_amount, percent_off=discount.percent_off)
-            reserve_discount_use(self.session, discount)
 
         ttl = timedelta(seconds=get_app().configuration.api.booking_ttl_seconds)
         booking = create_booking_rows(
@@ -90,4 +90,7 @@ class CreateBookingJob(BaseJob[Booking]):
             discount_amount=discount_amount,
             min_price=min_price,
         )
+        if discount is not None:
+            # Booking must exist (have an id) before the journal row can reference it.
+            reserve_discount_use(self.session, discount, booking)
         self.set_output(booking)

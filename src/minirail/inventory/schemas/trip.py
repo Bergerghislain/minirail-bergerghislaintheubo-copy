@@ -17,3 +17,12 @@ class TripResultSchema(Schema):
     # Advisory only: computed at search time and possibly cached — the
     # capacity check happens when the booking is created.
     remaining_seats: int
+
+
+class TripSearchPageSchema(Schema):
+    """Paginated trip search response."""
+
+    items: list[TripResultSchema]
+    total: int
+    limit: int
+    offset: int

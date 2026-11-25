@@ -17,7 +17,9 @@ def _search(client: TestClient, headers: dict[str, str], origin: str, destinatio
         params={"originStationCode": origin, "destinationStationCode": destination, "date": TRAVEL_DATE.isoformat()},
     )
     assert response.status_code == 200
-    return response.json()
+    body = response.json()
+    assert "items" in body
+    return body["items"]
 
 
 def test_direct_od_availability(client: TestClient, auth_headers: dict[str, str], session: Session) -> None:
@@ -61,7 +63,31 @@ def test_search_filters_by_date(client: TestClient, auth_headers: dict[str, str]
     )
 
     assert response.status_code == 200
-    assert response.json() == []
+    body = response.json()
+    assert body["items"] == []
+    assert body["total"] == 0
+
+
+def test_search_is_paginated(client: TestClient, auth_headers: dict[str, str], session: Session) -> None:
+    build_service_with_ods(session, station_codes=["FRPAR", "FRLYS", "FRMRS"], service_date=TRAVEL_DATE)
+
+    response = client.get(
+        "/api/trips/search",
+        headers=auth_headers,
+        params={
+            "originStationCode": "FRPAR",
+            "destinationStationCode": "FRMRS",
+            "date": TRAVEL_DATE.isoformat(),
+            "limit": 1,
+            "offset": 0,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["limit"] == 1
+    assert len(body["items"]) == 1
 
 
 def test_search_results_are_cached(session: Session, query_counter: list[str]) -> None:

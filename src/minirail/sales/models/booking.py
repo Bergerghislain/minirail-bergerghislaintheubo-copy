@@ -20,6 +20,9 @@ if TYPE_CHECKING:
 
 class BookingStatusEnum(StrEnum):
     PENDING = "PENDING"
+    # Claimed for payment: the PSP call runs outside any DB transaction so a
+    # slow partner cannot hold row locks. Finalize or abort after the charge.
+    CONFIRMING = "CONFIRMING"
     CONFIRMED = "CONFIRMED"
     CANCELLED = "CANCELLED"
     EXPIRED = "EXPIRED"
@@ -42,9 +45,9 @@ def generate_pnr() -> str:
 class Booking(Base):
     """An order placed by a sales channel: passengers + tickets + payment state.
 
-    Lifecycle: PENDING (seats held, awaiting payment) → CONFIRMED, or
-    → EXPIRED (payment never came, seats released by the expiry actor), or
-    → CANCELLED (explicitly cancelled, seats released).
+    Lifecycle: PENDING (seats held, awaiting payment) → CONFIRMING (payment in
+    flight) → CONFIRMED, or → EXPIRED (payment never came, seats released by
+    the expiry actor), or → CANCELLED (explicitly cancelled, seats released).
     """
 
     __tablename__ = "booking"
@@ -52,6 +55,9 @@ class Booking(Base):
         # The expiry sweep scans for PENDING bookings past their expires_at;
         # without this index that query degrades linearly with table size.
         Index("ix_booking_status_expires_at", "status", "expires_at"),
+        # PostgreSQL does not index FK columns automatically; reporting by
+        # promotion and joining redemptions need this.
+        Index("ix_booking_discount_code_id", "discount_code_id"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

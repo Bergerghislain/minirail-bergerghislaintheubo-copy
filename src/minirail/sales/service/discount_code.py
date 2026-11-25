@@ -1,6 +1,9 @@
-"""Discount-code primitives: validate a code, reserve a use, release a use.
+"""Discount-code primitives: validate, reserve, release, consume.
 
 Everything here flushes and never commits — the caller owns the transaction.
+
+``use_count`` is denormalized; every change also writes the redemption journal
+so usage can be audited and the counter reconstructed.
 """
 
 from decimal import ROUND_HALF_UP, Decimal
@@ -8,7 +11,12 @@ from decimal import ROUND_HALF_UP, Decimal
 from sqlalchemy import select, update
 
 from minirail.orm import MinirailSession
-from minirail.sales.models import DiscountCode
+from minirail.sales.models import (
+    Booking,
+    DiscountCode,
+    DiscountRedemption,
+    DiscountRedemptionStatusEnum,
+)
 from minirail.utils.date_utils import utc_now
 from minirail.utils.exc import (
     DiscountCodeExhaustedException,
@@ -71,24 +79,62 @@ def compute_discount_amount(*, full_amount: Decimal, percent_off: Decimal) -> De
     return raw.quantize(_CENT, rounding=ROUND_HALF_UP)
 
 
-def reserve_discount_use(session: MinirailSession, discount: DiscountCode) -> None:
-    """Consume one use. Caller must have loaded the row with FOR UPDATE."""
+def reserve_discount_use(session: MinirailSession, discount: DiscountCode, booking: Booking) -> DiscountRedemption:
+    """Consume one use for ``booking`` and append a RESERVED journal row.
+
+    Caller must have loaded the discount row with FOR UPDATE and flushed the
+    booking so it has a primary key.
+    """
     if discount.use_count >= discount.max_uses:
         raise DiscountCodeExhaustedException(f"Discount code {discount.code!r} has no remaining uses")
     discount.use_count += 1
+    redemption = DiscountRedemption(
+        discount_code_id=discount.id,
+        booking_id=booking.id,
+        status=DiscountRedemptionStatusEnum.RESERVED,
+    )
+    session.add(redemption)
+    session.flush()
+    return redemption
+
+
+def release_discount_use(session: MinirailSession, booking: Booking) -> None:
+    """Give one use back when a PENDING/CONFIRMING booking is cancelled or expires.
+
+    Marks the journal row RELEASED and decrements ``use_count`` atomically so
+    a concurrent reserve cannot be overwritten by a stale Python counter.
+    """
+    redemption = session.scalars(
+        select(DiscountRedemption).where(
+            DiscountRedemption.booking_id == booking.id,
+            DiscountRedemption.status == DiscountRedemptionStatusEnum.RESERVED,
+        )
+    ).one_or_none()
+    if redemption is None:
+        return
+
+    redemption.status = DiscountRedemptionStatusEnum.RELEASED
+    redemption.released_at = utc_now()
+    session.execute(
+        update(DiscountCode)
+        .where(DiscountCode.id == redemption.discount_code_id, DiscountCode.use_count > 0)
+        .values(use_count=DiscountCode.use_count - 1)
+    )
     session.flush()
 
 
-def release_discount_use(session: MinirailSession, discount: DiscountCode) -> None:
-    """Give one use back (a PENDING booking was cancelled or expired).
+def consume_discount_redemption(session: MinirailSession, booking: Booking) -> None:
+    """Mark the reserved use as CONSUMED after a successful payment.
 
-    A single UPDATE, unlike the reserve path, which already holds the row
-    lock: a counter computed in Python here could overwrite a use another
-    booking reserved in the meantime.
+    ``use_count`` is unchanged: the use was already counted at reservation.
     """
-    session.execute(
-        update(DiscountCode)
-        .where(DiscountCode.id == discount.id, DiscountCode.use_count > 0)
-        .values(use_count=DiscountCode.use_count - 1)
-    )
-    session.expire(discount, ["use_count"])
+    redemption = session.scalars(
+        select(DiscountRedemption).where(
+            DiscountRedemption.booking_id == booking.id,
+            DiscountRedemption.status == DiscountRedemptionStatusEnum.RESERVED,
+        )
+    ).one_or_none()
+    if redemption is None:
+        return
+    redemption.status = DiscountRedemptionStatusEnum.CONSUMED
+    session.flush()

@@ -111,6 +111,19 @@ class FakeRedis:
         self.storage[name] = value
         return True
 
+    def incr(self, name: str) -> int:
+        self._check()
+        key = self._as_str(name)
+        current = int(self.storage.get(key, b"0"))
+        current += 1
+        self.storage[key] = str(current).encode()
+        return current
+
+    def expire(self, name: str, time: int) -> bool:
+        self._check()
+        # TTL is not simulated; presence alone is enough for tests.
+        return self._as_str(name) in self.storage
+
     def delete(self, *names: str | bytes) -> int:
         self._check()
         return sum(1 for name in names if self.storage.pop(self._as_str(name), None) is not None)
