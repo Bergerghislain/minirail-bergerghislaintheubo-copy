@@ -1,0 +1,307 @@
+[
+  {
+    "company": "PayPlug",
+    "target_title": "Solution Engineer",
+    "profil": "Ingénieur logiciel full-stack (Ensimag / ENSP Yaoundé) orienté APIs et intégration client. Expérience concrète en conception d’API REST (Node.js / Express, JSON, PostgreSQL) et en interfaces React / TypeScript sur plateforme de production. À l’aise pour explorer et documenter des APIs, préparer des démos, vulgariser des flux techniques auprès de non-développeurs, et adapter des scripts / snippets d’intégration aux cas d’usage clients. Esprit structuré, autonome, bilingue FR/EN. Basé à Paris.",
+    "competences_cles": [
+      "API REST & JSON",
+      "Postman / exploration et tests d’API",
+      "Démos & vulgarisation technique",
+      "Scripting d’intégration (JavaScript / Node.js)",
+      "Node.js / Express",
+      "React / TypeScript",
+      "SQL / PostgreSQL",
+      "CI/CD (GitHub Actions) & Docker",
+      "Analyse de besoins clients",
+      "Anglais professionnel"
+    ],
+    "experiences": [
+      {
+        "employeur": "Shift Technology",
+        "lieu": "Paris, France",
+        "titre": "Ingénieur Logiciel (CDI – Plateforme / Backend)",
+        "dates": "Sept 2026 – Nov 2026",
+        "bullets": [
+          "Contribution à une plateforme SaaS : composants backend et API sur Microsoft Azure ; revues de code et fiabilité en production.",
+          "Travail sur un codebase existant complexe ; compréhension des besoins métier et proposition de solutions adaptées."
+        ]
+      },
+      {
+        "employeur": "Gustave Roussy & CentraleSupélec MICS Lab",
+        "lieu": "Paris, France",
+        "titre": "Ingénieur Logiciel Full-Stack JavaScript (CDD)",
+        "dates": "Jan 2026 – Sept 2026",
+        "bullets": [
+          "Conception d’API REST en Node.js / Express avec PostgreSQL : validation, contrôle d’accès, journalisation structurée et échanges JSON.",
+          "Développement d’interfaces React / TypeScript consommant les API ; composants réutilisables et gestion des états de chargement / erreur.",
+          "Intégration de services tiers et adaptation du code aux besoins métier ; documentation technique pour faciliter la reprise et l’usage des APIs.",
+          "Optimisation SQL (+30 % sur les lectures critiques) et amélioration continue des performances.",
+          "Tests automatisés (Jest), CI/CD via GitHub Actions et conteneurisation Docker."
+        ]
+      },
+      {
+        "employeur": "Dassault Systèmes – 3DEXPERIENCE R&D",
+        "lieu": "Vélizy-Villacoublay, France",
+        "titre": "Ingénieur Logiciel (Stage)",
+        "dates": "Mars 2025 – Sept 2025",
+        "bullets": [
+          "Développement de fonctionnalités full-stack (services REST + contribution front TypeScript) sur un module de production.",
+          "Lecture et évolution d’une base de code existante ; adaptation aux contraintes techniques et fonctionnelles.",
+          "Résultats : +35 % de performance sur les endpoints critiques, 85 % de couverture de tests (TDD, JUnit).",
+          "Analyse de besoins avec les équipes produit, revues de code, tests de non-régression et documentation."
+        ]
+      },
+      {
+        "employeur": "INRIA Grenoble – Humanlab / Froll’N’Roll",
+        "lieu": "Montbonnot-Saint-Martin, France",
+        "titre": "Stagiaire de recherche",
+        "dates": "Mai 2024 – Août 2024",
+        "bullets": [
+          "Modules C/FreeRTOS et Python sous contraintes de latence ; protocoles de test et documentation."
+        ]
+      }
+    ],
+    "projets": [
+      {
+        "titre": "Dashboard d’intégration API",
+        "tech": "React, TypeScript, API REST, CI/CD (GitHub Actions)",
+        "bullets": [
+          "Interface consommant plusieurs API REST avec gestion des états, erreurs et pagination.",
+          "Pipeline CI (GitHub Actions) et tests automatisés — utile pour illustrer démos et scénarios d’intégration."
+        ]
+      },
+      {
+        "titre": "Intégration low-code + JavaScript (prototype)",
+        "tech": "JavaScript, React, API REST, JSON",
+        "bullets": [
+          "Prototype d’interface de configuration : formulaires dynamiques et workflows générés à partir d’un schéma JSON, logique métier en JavaScript.",
+          "Intégration d’API REST externes ; adaptation du code pour plusieurs cas d’usage clients."
+        ]
+      },
+      {
+        "titre": "Simulateur de crédit (finance) — Full-stack JS",
+        "tech": "JavaScript, Node.js, React, PostgreSQL",
+        "bullets": [
+          "Application full-stack : calcul d’échéanciers, taux et mensualités ; back Node.js + front React et persistance PostgreSQL.",
+          "Tests unitaires et documentation ; intérêt pour les domaines finance / paiement."
+        ]
+      }
+    ],
+    "competences_tech": {
+      "langages": "JavaScript, TypeScript, SQL, JSON, Python (notions), Java (notions)",
+      "apis_integration": "API REST, Postman (exploration / tests / démos), scripting Node.js, intégration de services tiers",
+      "front": "React, HTML/CSS, Angular (notions)",
+      "back": "Node.js / Express, PostgreSQL",
+      "devops_qualite": "Git / GitHub, GitHub Actions, CI/CD, Docker, Jest",
+      "methodes": "Agile / Scrum, revues de code, documentation, vulgarisation, analyse de besoins"
+    },
+    "langues": [
+      "Français : courant",
+      "Anglais : bilingue (usage professionnel)",
+      "Espagnol : intermédiaire"
+    ]
+  },
+  {
+    "company": "Allphins",
+    "target_title": "Analytics Engineer",
+    "profil": "Ingénieur logiciel (Ensimag / ENSP Yaoundé) avec un ancrage fort sur la donnée relationnelle : SQL / PostgreSQL en production, optimisation de lectures critiques (+30 %), et analyse de besoins métier pour transformer des règles en modèles et requêtes fiables. Notions de Python. Expérience full-stack (Node.js, React, TypeScript) utile pour comprendre la chaîne API → données → restitution. Motivé par l’analytics engineering : qualité des données, requêtes structurées, analyses reproductibles. Pas d’expérience production BigQuery / Airflow / LLM — appétence pour les approches data et l’outillage assisté par IA. Bilingue FR/EN, basé à Paris.",
+    "competences_cles": [
+      "SQL / PostgreSQL (optimisation +30 % lectures critiques)",
+      "Modélisation & analyse de données",
+      "Python (notions)",
+      "API REST & JSON",
+      "Node.js / Express",
+      "React / TypeScript",
+      "Tests & qualité (Jest)",
+      "CI/CD (GitHub Actions) & Docker",
+      "Esprit analytique & documentation",
+      "Anglais professionnel"
+    ],
+    "experiences": [
+      {
+        "employeur": "Shift Technology",
+        "lieu": "Paris, France",
+        "titre": "Ingénieur Logiciel (CDI – Plateforme / Backend)",
+        "dates": "Sept 2026 – Nov 2026",
+        "bullets": [
+          "Contribution à une plateforme SaaS d’IA pour l’assurance : composants backend et API sur Microsoft Azure ; revues de code et fiabilité en production.",
+          "Travail sur un codebase existant complexe ; compréhension des besoins métier et proposition de solutions adaptées."
+        ]
+      },
+      {
+        "employeur": "Gustave Roussy & CentraleSupélec MICS Lab",
+        "lieu": "Paris, France",
+        "titre": "Ingénieur Logiciel Full-Stack JavaScript (CDD)",
+        "dates": "Jan 2026 – Sept 2026",
+        "bullets": [
+          "Conception d’API REST en Node.js / Express avec PostgreSQL : validation, contrôle d’accès, journalisation structurée — données exposées de façon cohérente et traçable.",
+          "Optimisation SQL (+30 % sur les lectures critiques) et amélioration continue des performances des requêtes.",
+          "Développement d’interfaces React / TypeScript pour visualiser et manipuler les données métier ; gestion des états de chargement / erreur.",
+          "Tests automatisés (Jest), CI/CD via GitHub Actions et conteneurisation Docker.",
+          "Intégration de services tiers et adaptation du code aux besoins métier ; documentation technique."
+        ]
+      },
+      {
+        "employeur": "Dassault Systèmes – 3DEXPERIENCE R&D",
+        "lieu": "Vélizy-Villacoublay, France",
+        "titre": "Ingénieur Logiciel (Stage)",
+        "dates": "Mars 2025 – Sept 2025",
+        "bullets": [
+          "Développement de fonctionnalités full-stack (services REST + contribution front TypeScript) sur un module de production.",
+          "Analyse de besoins avec les équipes produit ; traduction de règles métier en comportements testables.",
+          "Résultats : +35 % de performance sur les endpoints critiques, 85 % de couverture de tests (TDD, JUnit).",
+          "Lecture et évolution d’une base de code existante ; revues de code, non-régression et documentation."
+        ]
+      },
+      {
+        "employeur": "INRIA Grenoble – Humanlab / Froll’N’Roll",
+        "lieu": "Montbonnot-Saint-Martin, France",
+        "titre": "Stagiaire de recherche",
+        "dates": "Mai 2024 – Août 2024",
+        "bullets": [
+          "Modules C/FreeRTOS et Python sous contraintes de latence ; protocoles de test, mesures et documentation."
+        ]
+      }
+    ],
+    "projets": [
+      {
+        "titre": "Simulateur de crédit (finance) — Full-stack JS",
+        "tech": "JavaScript, Node.js, React, PostgreSQL, SQL",
+        "bullets": [
+          "Application full-stack avec persistance PostgreSQL : calcul d’échéanciers, taux et mensualités — logique quantitative et données structurées.",
+          "Tests unitaires et documentation ; projet orienté analyse / finance."
+        ]
+      },
+      {
+        "titre": "Dashboard d’intégration API",
+        "tech": "React, TypeScript, API REST, CI/CD",
+        "bullets": [
+          "Interface consommant plusieurs API REST avec gestion des états, erreurs et pagination — restitution de données pour l’utilisateur.",
+          "Pipeline CI (GitHub Actions) et tests automatisés."
+        ]
+      },
+      {
+        "titre": "Intégration low-code + JavaScript (prototype)",
+        "tech": "JavaScript, React, API REST, JSON",
+        "bullets": [
+          "Prototype : formulaires dynamiques et workflows générés à partir d’un schéma JSON ; logique métier en JavaScript.",
+          "Intégration d’API REST externes pour plusieurs cas d’usage."
+        ]
+      }
+    ],
+    "competences_tech": {
+      "data_sql": "SQL, PostgreSQL (optimisation de lectures), analyse de besoins data, JSON",
+      "langages": "JavaScript, TypeScript, Python (notions), Java (notions)",
+      "front": "React, HTML/CSS, Angular (notions)",
+      "back_api": "Node.js / Express, API REST",
+      "devops_qualite": "Git / GitHub, GitHub Actions, CI/CD, Docker, Jest",
+      "methodes": "Agile / Scrum, revues de code, documentation, esprit analytique"
+    },
+    "langues": [
+      "Français : courant",
+      "Anglais : bilingue (usage professionnel)",
+      "Espagnol : intermédiaire"
+    ]
+  },
+  {
+    "company": "Stoïk",
+    "target_title": "RevOps",
+    "profil": "Ingénieur logiciel full-stack (Ensimag / ENSP Yaoundé) orienté intégrations, automatisations et outils internes. Expérience en API REST, JSON, Node.js / Express et React / TypeScript pour connecter des systèmes et adapter le code aux besoins métier. Habitué à comprendre un process métier, le formaliser, puis le traduire en workflows / automatisations et documentation. Approche AI-assisted building pour accélérer le prototypage d’outils internes (sans prétendre à une stack CRM type HubSpot en production). Bilingue FR/EN, basé à Paris.",
+    "competences_cles": [
+      "Intégrations API REST & JSON",
+      "Automatisations & workflows",
+      "Outils internes / prototypage",
+      "AI-assisted building",
+      "Analyse de besoins métier",
+      "Node.js / Express & scripting",
+      "React / TypeScript",
+      "SQL / PostgreSQL",
+      "CI/CD (GitHub Actions) & Docker",
+      "Anglais professionnel"
+    ],
+    "experiences": [
+      {
+        "employeur": "Shift Technology",
+        "lieu": "Paris, France",
+        "titre": "Ingénieur Logiciel (CDI – Plateforme / Backend)",
+        "dates": "Sept 2026 – Nov 2026",
+        "bullets": [
+          "Contribution à une plateforme SaaS : composants backend et API sur Microsoft Azure ; revues de code et fiabilité en production.",
+          "Compréhension des besoins métier sur un codebase complexe ; proposition de solutions adaptées aux process existants."
+        ]
+      },
+      {
+        "employeur": "Gustave Roussy & CentraleSupélec MICS Lab",
+        "lieu": "Paris, France",
+        "titre": "Ingénieur Logiciel Full-Stack JavaScript (CDD)",
+        "dates": "Jan 2026 – Sept 2026",
+        "bullets": [
+          "Conception d’API REST en Node.js / Express avec PostgreSQL : validation, contrôle d’accès, journalisation — socle d’intégration entre services.",
+          "Intégration de services tiers et adaptation du code aux besoins métier ; documentation technique pour les équipes.",
+          "Développement d’interfaces React / TypeScript (formulaires, états, erreurs) pour outiller les utilisateurs métier.",
+          "Optimisation SQL (+30 % sur les lectures critiques) ; tests Jest, CI/CD GitHub Actions, Docker."
+        ]
+      },
+      {
+        "employeur": "Dassault Systèmes – 3DEXPERIENCE R&D",
+        "lieu": "Vélizy-Villacoublay, France",
+        "titre": "Ingénieur Logiciel (Stage)",
+        "dates": "Mars 2025 – Sept 2025",
+        "bullets": [
+          "Développement full-stack (services REST + contribution front TypeScript) sur un module de production.",
+          "Analyse de besoins avec les équipes produit ; traduction de contraintes métier en fonctionnalités livrées.",
+          "Résultats : +35 % de performance sur les endpoints critiques, 85 % de couverture de tests (TDD, JUnit).",
+          "Revues de code, tests de non-régression et documentation."
+        ]
+      },
+      {
+        "employeur": "INRIA Grenoble – Humanlab / Froll’N’Roll",
+        "lieu": "Montbonnot-Saint-Martin, France",
+        "titre": "Stagiaire de recherche",
+        "dates": "Mai 2024 – Août 2024",
+        "bullets": [
+          "Modules C/FreeRTOS et Python sous contraintes de latence ; protocoles de test et documentation."
+        ]
+      }
+    ],
+    "projets": [
+      {
+        "titre": "Intégration low-code + JavaScript (prototype)",
+        "tech": "JavaScript, React, API REST, JSON, workflows",
+        "bullets": [
+          "Prototype d’interface de configuration low-code : formulaires dynamiques et workflows générés à partir d’un schéma JSON.",
+          "Intégration d’API REST externes ; adaptation pour plusieurs cas d’usage — angle outils internes / automatisation."
+        ]
+      },
+      {
+        "titre": "Dashboard d’intégration API",
+        "tech": "React, TypeScript, API REST, CI/CD",
+        "bullets": [
+          "Interface consommant plusieurs API REST avec gestion des états, erreurs et pagination.",
+          "Pipeline CI (GitHub Actions) et tests automatisés."
+        ]
+      },
+      {
+        "titre": "Simulateur de crédit (finance) — Full-stack JS",
+        "tech": "JavaScript, Node.js, React, PostgreSQL",
+        "bullets": [
+          "Application full-stack JS : règles métier chiffrées (échéanciers, taux, mensualités) exposées via API et UI.",
+          "Tests unitaires et documentation."
+        ]
+      }
+    ],
+    "competences_tech": {
+      "integrations_ops": "API REST, JSON, workflows, automatisations, intégration de services tiers, AI-assisted building",
+      "langages": "JavaScript, TypeScript, SQL, Python (notions), Java (notions)",
+      "front": "React, HTML/CSS, Angular (notions)",
+      "back": "Node.js / Express, PostgreSQL",
+      "devops_qualite": "Git / GitHub, GitHub Actions, CI/CD, Docker, Jest",
+      "methodes": "Agile / Scrum, analyse de besoins métier, revues de code, documentation"
+    },
+    "langues": [
+      "Français : courant",
+      "Anglais : bilingue (usage professionnel)",
+      "Espagnol : intermédiaire"
+    ]
+  }
+]
